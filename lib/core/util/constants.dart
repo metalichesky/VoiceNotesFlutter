@@ -1,0 +1,2 @@
+
+const String PREFS_KEY_RECORD_PARAMS = 'RECORD_PARAMS';
