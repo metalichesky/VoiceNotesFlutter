@@ -4,11 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:voice_notes/core/util/color.dart';
 
 
-class CustomTheme {
+class ThemeUtils {
   static ThemeData mainTheme = ThemeData(
     // Default brightness and colors.
     brightness: Brightness.light,
-    primaryColor: CustomColor.logoBlue,
+    primaryColor: ColorUtils.logoBlue,
     accentColor: Colors.cyan[600],
 
     // Default font family.
@@ -20,17 +20,17 @@ class CustomTheme {
       headline1: TextStyle(
         fontSize: 20.0,
         fontWeight: FontWeight.bold,
-        color: CustomColor.fontBlack,
+        color: ColorUtils.fontBlack,
       ),
       headline2: TextStyle(
         fontSize: 18.0,
         fontWeight: FontWeight.bold,
-        color: CustomColor.fontBlack,
+        color: ColorUtils.fontBlack,
       ),
-      bodyText1: TextStyle(fontSize: 16.0, color: CustomColor.fontBlack),
-      bodyText2: TextStyle(fontSize: 16.0, color: CustomColor.hintColor),
+      bodyText1: TextStyle(fontSize: 16.0, color: ColorUtils.fontBlack),
+      bodyText2: TextStyle(fontSize: 16.0, color: ColorUtils.hintColor),
       button: TextStyle(
-        color: CustomColor.white,
+        color: ColorUtils.white,
         fontFamily: 'Roboto',
         fontWeight: FontWeight.w500,
         fontSize: 14,

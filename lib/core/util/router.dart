@@ -5,7 +5,7 @@ const String ROUTE_HOME = '/';
 const String ROUTE_RECORD = '/record';
 const String ROUTE_SETTINGS = '/settings';
 
-class CustomRouter {
+class RouterUtils {
   static Route<dynamic> generateRoute(RouteSettings settings) {
     switch (settings.name) {
       case ROUTE_HOME:

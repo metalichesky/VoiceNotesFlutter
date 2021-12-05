@@ -31,8 +31,8 @@ class VoiceNotesApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Voice Notes',
-      theme: CustomTheme.mainTheme,
-      onGenerateRoute: CustomRouter.generateRoute,
+      theme: ThemeUtils.mainTheme,
+      onGenerateRoute: RouterUtils.generateRoute,
       initialRoute: ROUTE_HOME,
     );
   }

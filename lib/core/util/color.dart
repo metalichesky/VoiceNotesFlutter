@@ -1,7 +1,7 @@
 
 import 'dart:ui';
 
-class CustomColor {
+class ColorUtils {
   static const Color white = Color(0xFFFFFFFF);
   static const Color fontBlack = Color(0xDE000000);
   static const Color logoBlue = Color(0xFF245f97);
