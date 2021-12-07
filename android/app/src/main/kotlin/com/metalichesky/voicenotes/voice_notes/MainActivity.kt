@@ -1,5 +1,6 @@
 package com.metalichesky.voicenotes.voice_notes
 
+import androidx.lifecycle.lifecycleScope
 import com.metalichesky.voicenotes.voice_notes.util.flutter.PlatformProcessor
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -14,7 +15,7 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun configurePlatformProcessor(flutterEngine: FlutterEngine) {
-        val platformProcessor = PlatformProcessor(this)
+        val platformProcessor = PlatformProcessor(this, lifecycleScope)
         this.platformProcessor = platformProcessor
         platformProcessor.configure(flutterEngine)
     }
