@@ -1,7 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:voice_notes/core/util/color.dart';
+import 'package:voice_note/core/util/color.dart';
 
 
 class ThemeUtils {

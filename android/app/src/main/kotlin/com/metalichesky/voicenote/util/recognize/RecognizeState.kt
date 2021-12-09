@@ -1,4 +1,4 @@
-package com.metalichesky.voicenotes.voice_notes.util.recognize
+package com.metalichesky.voicenote.util.recognize
 
 enum class RecognizeState(val stateId: Int) {
     IDLE(1),

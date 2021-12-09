@@ -1,6 +1,6 @@
-package com.metalichesky.voicenotes.voice_notes.util.flutter.channel
+package com.metalichesky.voicenote.util.flutter.channel
 
-import com.metalichesky.voicenotes.voice_notes.util.flutter.PlatformUtils
+import com.metalichesky.voicenote.util.flutter.PlatformUtils
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel

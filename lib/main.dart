@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:voice_notes/dependencies.dart' as di;
+import 'package:voice_note/dependencies.dart' as di;
 import 'package:logging/logging.dart';
-import 'package:voice_notes/presentation/ui/home_page.dart';
+import 'package:voice_note/presentation/ui/home_page.dart';
 
 import 'core/util/router.dart';
 import 'core/util/theme.dart';

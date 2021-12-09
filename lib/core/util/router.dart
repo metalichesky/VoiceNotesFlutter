@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:voice_notes/presentation/ui/home_page.dart';
+import 'package:voice_note/presentation/ui/home_page.dart';
 
 const String ROUTE_HOME = '/';
 const String ROUTE_RECORD = '/record';

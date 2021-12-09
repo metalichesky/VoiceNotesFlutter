@@ -1,4 +1,4 @@
-package com.metalichesky.voicenotes.voice_notes.util.recognize
+package com.metalichesky.voicenote.util.recognize
 
 import android.content.Context
 import android.util.Log
@@ -30,17 +30,17 @@ class RecognizeManager(
         private set
     private var model: Model? = null
     private var speechService: SpeechService? = null
-    private var recognitionListener = object: RecognitionListener {
+    private var recognitionListener = object : RecognitionListener {
         override fun onPartialResult(hypothesis: String?) {
-
+            listener?.onRecognized(hypothesis ?: "")
         }
 
         override fun onResult(hypothesis: String?) {
-
+            listener?.onRecognized(hypothesis ?: "")
         }
 
         override fun onFinalResult(hypothesis: String?) {
-
+            listener?.onRecognized(hypothesis ?: "")
         }
 
         override fun onError(exception: Exception?) {
@@ -62,41 +62,28 @@ class RecognizeManager(
         this.listener = recognizeListener
     }
 
-    suspend fun setup(params: RecognizeParams) {
+    fun setup(params: RecognizeParams) {
         this.params = params
         if (state != RecognizeState.IDLE) {
             release()
         }
-        val configured = try {
-            suspendCancellableCoroutine<Boolean> { continuation ->
-                StorageService.unpack(context, "model-${params.locale}", PATH_MODEL_DIR,
-                        { model: Model ->
-                            Log.d(LOG_TAG, "initModel: model initialized")
-                            this.model = model
-                            continuation.resumeWith(Result.success(true))
-                        },
-                        { exception: IOException ->
-                            Log.e(LOG_TAG, "initModel: model error initialization", exception)
-                            continuation.resumeWith(Result.failure(RecognizeException(
-                                    RecognizeError(
-                                            message = "Error Model Initialization"
-                                    )
-                            )))
-                        })
-            }
-        } catch (ex: RecognizeException) {
-            listener?.onError(ex.error)
-            false
-        }
-        if (configured) {
-            setState(RecognizeState.READY)
-        } else {
-            setState(RecognizeState.IDLE)
-        }
+        StorageService.unpack(context, "model-${params.locale}", PATH_MODEL_DIR,
+                { model: Model ->
+                    Log.d(LOG_TAG, "initModel: model initialized")
+                    this.model = model
+                    setState(RecognizeState.READY)
+                },
+                { exception: IOException ->
+                    Log.e(LOG_TAG, "initModel: model error initialization", exception)
+                    listener?.onError(RecognizeError(
+                            message = "Error Model Initialization"
+                    ))
+                    setState(RecognizeState.IDLE)
+                })
     }
 
     fun start() {
-        when(state) {
+        when (state) {
             RecognizeState.READY, RecognizeState.STOPPED -> {
                 val params = this.params
                         ?: throw IllegalStateException("params must not be null here")
@@ -118,7 +105,7 @@ class RecognizeManager(
     }
 
     fun pause() {
-        when(state) {
+        when (state) {
             RecognizeState.STARTED -> {
                 speechService?.setPause(true)
                 setState(RecognizeState.PAUSED)
@@ -127,7 +114,7 @@ class RecognizeManager(
     }
 
     fun stop() {
-        when(state) {
+        when (state) {
             RecognizeState.STARTED, RecognizeState.PAUSED -> {
                 speechService?.stop()
                 setState(RecognizeState.STOPPED)

@@ -1,4 +1,4 @@
-package com.metalichesky.voicenotes.voice_notes.util.recognize
+package com.metalichesky.voicenote.util.recognize
 
 class RecognizeException(
         val error: RecognizeError

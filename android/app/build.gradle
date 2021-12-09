@@ -20,6 +20,10 @@ def flutterVersionName = localProperties.getProperty('flutter.versionName')
 if (flutterVersionName == null) {
     flutterVersionName = '1.0'
 }
+def releaseStoreFile = localProperties.getProperty('releaseStoreFile')
+def releaseStorePassword = localProperties.getProperty('releaseStorePassword')
+def releaseKeyAlias = localProperties.getProperty('releaseKeyAlias')
+def releaseKeyPassword = localProperties.getProperty('releaseKeyPassword')
 
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
@@ -42,31 +46,30 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId "com.metalichesky.voicenotes.voice_notes"
+        applicationId "com.metalichesky.voicenote"
         minSdkVersion 21
         targetSdkVersion 31
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
     }
+
     signingConfigs {
-        debug {
-
-        }
         release {
-
+            storeFile file(releaseStoreFile)
+            storePassword releaseStorePassword
+            keyAlias releaseKeyAlias
+            keyPassword releaseKeyPassword
         }
     }
 
     buildTypes {
         debug {
-            signingConfig signingConfigs.debug
+            minifyEnabled false
+            shrinkResources false
             useProguard true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig signingConfigs.release
 
             minifyEnabled false
@@ -89,3 +92,25 @@ dependencies {
 
     implementation "com.alphacephei:vosk-android:0.3.32"
 }
+
+tasks.register('genUUID') {
+    def assetsDir = file("$projectDir\\src\\main\\assets\\")
+    assetsDir.listFiles().each { assetsFile ->
+        if (assetsFile.isDirectory() && assetsFile.name.contains("model")) {
+            println("found model ${assetsFile.name}")
+            def modelDir = assetsFile
+            def uuidFile = file("$modelDir/uuid")
+            if (!uuidFile.exists()) {
+                println("uuid file ${uuidFile} create")
+                def uuid = UUID.randomUUID().toString()
+                doLast {
+                    uuidFile.text = uuid
+                }
+            } else {
+                println("uuid file ${uuidFile} already exists")
+            }
+        }
+    }
+}
+
+preBuild.dependsOn(genUUID)

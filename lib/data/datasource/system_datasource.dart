@@ -1,16 +1,11 @@
 
 import 'package:flutter/services.dart';
 import 'package:logging/logging.dart';
-import 'package:voice_notes/core/util/platform.dart';
+import 'package:voice_note/core/util/platform.dart';
 
-abstract class SystemDataSource {
-  Future<double?> getBatteryCharge();
-}
+class SystemDataSource {
+  final MethodChannel _systemChannel = PlatformUtils.channelSystem;
 
-class SystemDataSourceImpl extends SystemDataSource {
-  final MethodChannel _systemChannel = PlatformUtils.systemChannel;
-
-  @override
   Future<double?> getBatteryCharge() async {
     double? batteryCharge;
     try {

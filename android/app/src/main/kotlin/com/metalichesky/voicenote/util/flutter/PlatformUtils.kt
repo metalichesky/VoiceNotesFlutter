@@ -1,4 +1,4 @@
-package com.metalichesky.voicenotes.voice_notes.util.flutter
+package com.metalichesky.voicenote.util.flutter
 
 import APP_ID
 

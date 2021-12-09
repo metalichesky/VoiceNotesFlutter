@@ -1,8 +1,8 @@
-package com.metalichesky.voicenotes.voice_notes.util.flutter.channel
+package com.metalichesky.voicenote.util.flutter.channel
 
-import com.metalichesky.voicenotes.voice_notes.util.flutter.PlatformUtils
-import com.metalichesky.voicenotes.voice_notes.util.recognize.RecognizeParams
-import com.metalichesky.voicenotes.voice_notes.util.recognize.RecognizeState
+import com.metalichesky.voicenote.util.flutter.PlatformUtils
+import com.metalichesky.voicenote.util.recognize.RecognizeParams
+import com.metalichesky.voicenote.util.recognize.RecognizeState
 import io.flutter.Log
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodCall
@@ -15,10 +15,10 @@ const val METHOD_STOP_RECOGNIZE = "stopRecognize"
 const val METHOD_GET_RECOGNIZE_STATE = "getRecognizeState"
 
 class RecognizeChannel(
-    val callback: Callback
+        val callback: Callback
 ) : PlatformChannel() {
     companion object {
-        const val LOG_TAG = "SystemChannel"
+        const val LOG_TAG = "RecognizeChannel"
     }
 
     override val name: String = PlatformUtils.CHANNEL_RECOGNIZE
@@ -53,6 +53,16 @@ class RecognizeChannel(
                 result.notImplemented()
             }
         }
+    }
+
+    fun onRecognizeStateChanged(oldState: RecognizeState, newState: RecognizeState) {
+        channel?.invokeMethod(
+                "onRecognizeStateChanged",
+                hashMapOf(
+                        "oldState" to oldState.stateId,
+                        "newState" to newState.stateId
+                )
+        )
     }
 
     interface Callback {

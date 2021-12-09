@@ -3,10 +3,10 @@ import 'dart:convert';
 
 import 'package:flutter/cupertino.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:voice_notes/core/error/exceptions.dart';
-import 'package:voice_notes/core/util/constants.dart';
-import 'package:voice_notes/data/model/record_params_model.dart';
-import 'package:voice_notes/domain/entity/record_params.dart';
+import 'package:voice_note/core/error/exceptions.dart';
+import 'package:voice_note/core/util/constants.dart';
+import 'package:voice_note/data/model/record_params_model.dart';
+import 'package:voice_note/domain/entity/record_params.dart';
 
 
 abstract class RecordParamsDataSource {

@@ -1,4 +1,4 @@
-package com.metalichesky.voicenotes.voice_notes.util
+package com.metalichesky.voicenote.util
 
 import android.os.Build
 

@@ -1,5 +1,5 @@
 
-import 'package:voice_notes/domain/abstractions/system_repository.dart';
+import 'package:voice_note/domain/abstractions/system_repository.dart';
 
 class SystemUseCase {
   SystemRepository systemRepository;
