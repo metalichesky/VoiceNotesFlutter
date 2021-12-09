@@ -100,6 +100,7 @@ class RecognizeManager(
             }
             RecognizeState.PAUSED -> {
                 speechService?.setPause(false)
+                setState(RecognizeState.STARTED)
             }
         }
     }

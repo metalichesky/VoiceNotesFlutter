@@ -1,8 +1,12 @@
 buildscript {
     ext.kotlin_version = '1.5.10'
     repositories {
+        gradlePluginPortal()
         google()
         mavenCentral()
+        maven {
+            url 'https://alphacephei.com/maven/'
+        }
     }
 
     dependencies {
@@ -13,8 +17,12 @@ buildscript {
 
 allprojects {
     repositories {
+        gradlePluginPortal()
         google()
         mavenCentral()
+        maven {
+            url 'https://alphacephei.com/maven/'
+        }
     }
 }
 

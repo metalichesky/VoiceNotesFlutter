@@ -11,19 +11,23 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         GeneratedPluginRegistrant.registerWith(flutterEngine)
-
-        configurePlatformProcessor(flutterEngine)
+        setupPlatformProcessor(flutterEngine)
     }
 
-    private fun configurePlatformProcessor(flutterEngine: FlutterEngine) {
+    private fun setupPlatformProcessor(flutterEngine: FlutterEngine) {
         if (platformProcessor == null) {
             platformProcessor = PlatformProcessor(applicationContext, lifecycleScope)
-            platformProcessor?.configure(flutterEngine)
+            platformProcessor?.setup(flutterEngine)
         }
     }
 
     override fun cleanUpFlutterEngine(flutterEngine: FlutterEngine) {
-        platformProcessor = null
+        releasePlatformProcessor()
         super.cleanUpFlutterEngine(flutterEngine)
+    }
+
+    private fun releasePlatformProcessor() {
+        platformProcessor?.release()
+        platformProcessor = null
     }
 }

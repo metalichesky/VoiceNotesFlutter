@@ -51,9 +51,12 @@ class PlatformProcessor(
 
     val channelSystem: SystemChannel = SystemChannel(channelSystemCallback)
     val channelRecognize: RecognizeChannel = RecognizeChannel(channelRecognizeCallback)
-    var recognizeManager: RecognizeManager
+    lateinit var recognizeManager: RecognizeManager
 
-    init {
+    var previousRecognized: String = ""
+
+    fun setup(flutterEngine: FlutterEngine) {
+        Log.d(LOG_TAG, "setup: thread=${Thread.currentThread().name}")
         recognizeManager = RecognizeManager(context)
         recognizeManager.setRecognizeListener(object : RecognizeListener {
             override fun onStateChanged(oldState: RecognizeState, newState: RecognizeState) {
@@ -62,20 +65,22 @@ class PlatformProcessor(
             }
 
             override fun onRecognized(text: String) {
-                Log.d(LOG_TAG, "onRecognized: text=${text}")
+                if (text != previousRecognized) {
+                    previousRecognized = text
+                    Log.d(LOG_TAG, "onRecognized: text=${text}")
+                }
             }
 
             override fun onError(error: RecognizeError) {
                 Log.d(LOG_TAG, "onError: error=${error.message}")
             }
         })
-    }
 
-    fun configure(flutterEngine: FlutterEngine) {
-        Log.d(LOG_TAG, "configure: thread=${Thread.currentThread().name}")
         channelSystem.configure(flutterEngine)
         channelRecognize.configure(flutterEngine)
     }
 
-
+    fun release() {
+        recognizeManager.release()
+    }
 }

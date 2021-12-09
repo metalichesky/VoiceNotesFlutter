@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:logging/logging.dart';
 import 'package:voice_note/core/util/theme.dart';
 import 'package:voice_note/domain/entity/recognize_state.dart';
 import 'package:voice_note/presentation/presenter/home_bloc.dart';
@@ -129,7 +130,8 @@ class _HomePageState extends State<HomePage> {
   BlocBuilder _buildRecognizeStateText() {
     return BlocBuilder<HomeBloc, HomeState>(
       builder: (context, state) {
-        if (state is HomeInitialState || state is HomeRecognizeStateUpdatedEvent) {
+        if (state is HomeState) {
+          Logger.root.info("HomePage: _buildRecognizeStateText: recognizeState=${state.recognizeState}");
           return Container(
             key: Key("textRecognizeState"),
             child: Text(

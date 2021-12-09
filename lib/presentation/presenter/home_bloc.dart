@@ -20,6 +20,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   HomeState get initialState => HomeInitialState();
 
   late StreamController<RecognizeStateUpdate> recognizeStateStream;
+  late StreamSubscription recognizeStateStreamSubscription;
 
   HomeBloc({
     required this.systemUseCase,
@@ -27,6 +28,9 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     required this.permissionUseCase
   }): super(HomeInitialState()) {
     recognizeStateStream = recognizeUseCase.recognizeStateStream;
+    recognizeStateStreamSubscription = recognizeStateStream.stream.listen((event) {
+      add(HomeRecognizeStateUpdatedEvent(stateUpdate: event));
+    });
 
     add(HomeCheckPermissionsEvent());
   }
@@ -87,5 +91,11 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
               break;
           }
     }
+  }
+
+  @override
+  Future<void> close() {
+    recognizeStateStreamSubscription.cancel();
+    return super.close();
   }
 }
