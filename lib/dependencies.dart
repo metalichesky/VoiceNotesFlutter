@@ -10,7 +10,7 @@ import 'package:voice_note/domain/abstractions/system_repository.dart';
 import 'package:voice_note/domain/usecase/permission_use_case.dart';
 import 'package:voice_note/domain/usecase/recognize_use_case.dart';
 import 'package:voice_note/domain/usecase/system_use_case.dart';
-import 'package:voice_note/presentation/presenter/home_bloc.dart';
+import 'package:voice_note/presentation/presenter/record_bloc.dart';
 
 final getIt = GetIt.instance; //sl is referred to as Service Locator
 
@@ -43,7 +43,7 @@ Future<void> init() async {
   getIt.registerLazySingleton(() => PermissionUseCase());
 
   // Blocs
-  getIt.registerFactory(() => HomeBloc(
+  getIt.registerFactory(() => RecordBloc(
       systemUseCase: getIt(),
       recognizeUseCase: getIt(),
       permissionUseCase: getIt()

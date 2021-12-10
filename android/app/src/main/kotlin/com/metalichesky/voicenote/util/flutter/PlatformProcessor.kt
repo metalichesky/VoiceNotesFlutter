@@ -19,7 +19,6 @@ class PlatformProcessor(
         const val LOG_TAG = "PlatformProcessor"
     }
 
-
     private val channelSystemCallback = object : SystemChannel.Callback {
         override fun onGetBatteryCharge(): Double {
             return BatteryUtils.getBatteryLevel(context)
@@ -53,7 +52,7 @@ class PlatformProcessor(
     val channelRecognize: RecognizeChannel = RecognizeChannel(channelRecognizeCallback)
     lateinit var recognizeManager: RecognizeManager
 
-    var previousRecognized: String = ""
+    var previousRecognized: RecognizeResult? = null
 
     fun setup(flutterEngine: FlutterEngine) {
         Log.d(LOG_TAG, "setup: thread=${Thread.currentThread().name}")
@@ -64,10 +63,10 @@ class PlatformProcessor(
                 channelRecognize.onRecognizeStateChanged(oldState, newState)
             }
 
-            override fun onRecognized(text: String) {
-                if (text != previousRecognized) {
-                    previousRecognized = text
-                    Log.d(LOG_TAG, "onRecognized: text=${text}")
+            override fun onRecognized(result: RecognizeResult) {
+                if (result != previousRecognized) {
+                    previousRecognized = result
+                    Log.d(LOG_TAG, "onRecognized: result=${result}")
                 }
             }
 

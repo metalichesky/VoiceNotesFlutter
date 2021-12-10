@@ -8,53 +8,53 @@ import 'package:voice_note/domain/usecase/permission_use_case.dart';
 import 'package:voice_note/domain/usecase/recognize_use_case.dart';
 import 'package:voice_note/domain/usecase/system_use_case.dart';
 
-part 'home_event.dart';
-part 'home_state.dart';
+part 'record_event.dart';
+part 'record_state.dart';
 
-class HomeBloc extends Bloc<HomeEvent, HomeState> {
+class RecordBloc extends Bloc<RecordEvent, RecordState> {
   SystemUseCase systemUseCase;
   RecognizeUseCase recognizeUseCase;
   PermissionUseCase permissionUseCase;
 
   @override
-  HomeState get initialState => HomeInitialState();
+  RecordState get initialState => HomeInitialState();
 
   late StreamController<RecognizeStateUpdate> recognizeStateStream;
   late StreamSubscription recognizeStateStreamSubscription;
 
-  HomeBloc({
+  RecordBloc({
     required this.systemUseCase,
     required this.recognizeUseCase,
     required this.permissionUseCase
   }): super(HomeInitialState()) {
     recognizeStateStream = recognizeUseCase.recognizeStateStream;
     recognizeStateStreamSubscription = recognizeStateStream.stream.listen((event) {
-      add(HomeRecognizeStateUpdatedEvent(stateUpdate: event));
+      add(RecordRecognizeStateUpdatedEvent(stateUpdate: event));
     });
 
-    add(HomeCheckPermissionsEvent());
+    add(RecordCheckPermissionsEvent());
   }
 
   @override
-  Stream<HomeState> mapEventToState(
-    HomeEvent event,
+  Stream<RecordState> mapEventToState(
+    RecordEvent event,
   ) async* {
     switch (event.runtimeType) {
-      case HomeCheckPermissionsEvent:
-        HomeState newState = HomeInitialState();
+      case RecordCheckPermissionsEvent:
+        RecordState newState = HomeInitialState();
         newState.from(state);
         bool audioGranted = await permissionUseCase.isAudioRecordAvailable();
         bool storageGranted = await permissionUseCase.isExternalStorageAvailable();
         newState.audioPermissionsGranted = audioGranted;
         newState.storagePermissionsGranted = storageGranted;
-        Logger.root.info("HomeBloc: mapEventToState: HomeCheckPermissionsEvent storageGranted=${storageGranted} audioGranted=${audioGranted}");
+        Logger.root.info("RecordBloc: mapEventToState: HomeCheckPermissionsEvent storageGranted=${storageGranted} audioGranted=${audioGranted}");
         yield newState;
         if (!audioGranted || !storageGranted) {
-          add(HomeRequestPermissionsEvent());
+          add(RecordRequestPermissionsEvent());
         }
         break;
-      case HomeRequestPermissionsEvent:
-        HomeState newState = HomeInitialState();
+      case RecordRequestPermissionsEvent:
+        RecordState newState = HomeInitialState();
         newState.from(state);
         if (!state.audioPermissionsGranted) {
           newState.audioPermissionsGranted = await permissionUseCase.requestAudioRecord();
@@ -64,14 +64,14 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         }
         yield newState;
         break;
-      case HomeRecognizeStateUpdatedEvent:
-          HomeRecognizeStateUpdatedEvent updatedEvent = event as HomeRecognizeStateUpdatedEvent;
+      case RecordRecognizeStateUpdatedEvent:
+          RecordRecognizeStateUpdatedEvent updatedEvent = event as RecordRecognizeStateUpdatedEvent;
           HomeRecognizeStateUpdatedState newState = HomeRecognizeStateUpdatedState();
           newState.from(state);
           newState.setUpdate(updatedEvent.stateUpdate);
           yield newState;
           break;
-      case HomeRecognizeSwitchEvent:
+      case RecordRecognizeSwitchEvent:
           RecognizeState? currentRecognizeState = state.recognizeState;
           switch(currentRecognizeState) {
             case RecognizeState.idle:

@@ -32,15 +32,15 @@ class RecognizeManager(
     private var speechService: SpeechService? = null
     private var recognitionListener = object : RecognitionListener {
         override fun onPartialResult(hypothesis: String?) {
-            listener?.onRecognized(hypothesis ?: "")
+            listener?.onRecognized(RecognizeResult.fromVoskApiResult(hypothesis ?: ""))
         }
 
         override fun onResult(hypothesis: String?) {
-            listener?.onRecognized(hypothesis ?: "")
+            listener?.onRecognized(RecognizeResult.fromVoskApiResult(hypothesis ?: ""))
         }
 
         override fun onFinalResult(hypothesis: String?) {
-            listener?.onRecognized(hypothesis ?: "")
+            listener?.onRecognized(RecognizeResult.fromVoskApiResult(hypothesis ?: ""))
         }
 
         override fun onError(exception: Exception?) {

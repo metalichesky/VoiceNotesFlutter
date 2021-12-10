@@ -1,20 +1,20 @@
-part of 'home_bloc.dart';
+part of 'record_bloc.dart';
 
 @immutable
-abstract class HomeState {
+abstract class RecordState {
   RecognizeState? recognizeState;
   RecognizeState? oldRecognizeState;
   bool audioPermissionsGranted;
   bool storagePermissionsGranted;
 
-  HomeState({
+  RecordState({
     this.recognizeState = RecognizeState.idle,
     this.oldRecognizeState,
     this.audioPermissionsGranted = false,
     this.storagePermissionsGranted = false
   }) : super();
 
-  void from(HomeState state) {
+  void from(RecordState state) {
     this.audioPermissionsGranted = state.audioPermissionsGranted;
     this.storagePermissionsGranted = state.storagePermissionsGranted;
     this.recognizeState = state.recognizeState;
@@ -22,11 +22,11 @@ abstract class HomeState {
   }
 }
 
-class HomeInitialState extends HomeState {
+class HomeInitialState extends RecordState {
 
 }
 
-class HomeRecognizeStateUpdatedState extends HomeState {
+class HomeRecognizeStateUpdatedState extends RecordState {
 
   void setUpdate(RecognizeStateUpdate recognizeStateUpdate) {
     this.recognizeState = recognizeStateUpdate.newState;
