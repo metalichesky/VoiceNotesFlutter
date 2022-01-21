@@ -77,6 +77,12 @@ dependencies:
   json_annotation: ^4.4.0
   # Permissions
   permission_handler: ^8.3.0
+  # Markdown editor
+#  flutter_markdown: ^0.6.9
+  # Zefyrka rich text editor
+#  zefyrka: ^1.1.1
+  flutter_quill: ^3.4.2
+  quill_delta: ^2.0.0
 
 dev_dependencies:
   flutter_test:

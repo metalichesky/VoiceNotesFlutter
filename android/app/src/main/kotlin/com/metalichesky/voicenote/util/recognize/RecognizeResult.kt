@@ -1,17 +1,18 @@
 package com.metalichesky.voicenote.util.recognize
 
 import com.google.gson.Gson
+import com.google.gson.annotations.Expose
 import java.lang.Exception
 
 class RecognizeResult {
     companion object {
-        private val voskApiDelimiterRegex = Regex("(( )*:( )*)")
-        private val voskApiBracketsRegex = Regex("(^(( )*\")|(\"( )*)\$)")
-        private val jsonParser = Gson()
+//        private val voskApiDelimiterRegex = Regex("(( )*:( )*)")
+//        private val voskApiBracketsRegex = Regex("(^(( )*\")|(\"( )*)\$)")
+        private val gson = Gson()
 
         fun fromVoskApiResult(voskApiResult: String): RecognizeResult {
             return try {
-                jsonParser.fromJson(voskApiResult, RecognizeResult::class.java)
+                gson.fromJson(voskApiResult, RecognizeResult::class.java)
             } catch (ex: Exception) {
                 RecognizeResult()
             }
@@ -26,8 +27,9 @@ class RecognizeResult {
 
     var partial: String? = null
     var text: String? = null
-    val type: Type by lazy {
-        when {
+    val type: Type
+    get() {
+        return when {
             text != null -> {
                 Type.TEXT
             }
@@ -39,6 +41,7 @@ class RecognizeResult {
             }
         }
     }
+
     val anyResult: String?
     get() {
         return text ?: partial
@@ -49,7 +52,11 @@ class RecognizeResult {
     }
 
     override fun toString(): String {
-        return toVoskApiResult()
+        return gson.toJson(this);
+    }
+
+    fun isEmpty(): Boolean {
+        return anyResult == null || anyResult?.isEmpty() == true;
     }
 
     override fun equals(other: Any?): Boolean {

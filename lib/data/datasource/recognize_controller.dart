@@ -1,10 +1,14 @@
+import 'dart:convert';
+
 import 'package:flutter/services.dart';
 import 'package:logging/logging.dart';
 import 'package:voice_note/core/util/platform.dart';
 import 'package:voice_note/domain/entity/recognize_listener.dart';
+import 'package:voice_note/domain/entity/recognize_result.dart';
 import 'package:voice_note/domain/entity/recognize_state.dart';
 
 const String _METHOD_ON_RECOGNIZE_STATE_CHANGED = "onRecognizeStateChanged";
+const String _METHOD_ON_RECOGNIZE_RESULT = "onRecognizeResult";
 
 class RecognizeController {
   final MethodChannel _channelRecognize = PlatformUtils.channelRecognize;
@@ -29,6 +33,12 @@ class RecognizeController {
         RecognizeState newState = parseRecognizeState(stateId: newStateId);
         Logger.root.info("RecognizeController: _processMethod() oldState=${oldState} newState=${newState}");
         _recognizeListener?.onRecognizeStateChanged(oldState, newState);
+        return Future.value(null);
+      case _METHOD_ON_RECOGNIZE_RESULT:
+        String recognizeResultJson = call.arguments["recognizeResult"];
+        RecognizeResult recognizeResult = RecognizeResult.fromJson(jsonDecode(recognizeResultJson));
+        Logger.root.info("RecognizeController: _processMethod() recognizeResult=${recognizeResult.toJson()}");
+        _recognizeListener?.onRecognizeResult(recognizeResult);
         return Future.value(null);
       default:
         return Future.value(null);

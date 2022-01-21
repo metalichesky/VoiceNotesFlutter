@@ -1,7 +1,9 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_quill/flutter_quill.dart' hide Text;
 import 'package:logging/logging.dart';
-import 'package:voice_note/core/util/theme.dart';
+import 'package:voice_note/core/util/zefyr.dart';
 import 'package:voice_note/domain/entity/recognize_state.dart';
 import 'package:voice_note/presentation/presenter/record_bloc.dart';
 
@@ -24,7 +26,7 @@ class RecordPage extends StatefulWidget {
   // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
   // to see the wireframe for each widget.
 
-  final String title = "Flutter Demo Home Page";
+  final String title = "Record Page";
 
   @override
   State<RecordPage> createState() => _RecordPageState();
@@ -35,8 +37,8 @@ class _RecordPageState extends State<RecordPage> {
 
   @override
   void initState() {
+    Logger.root.info("RecordPage: initState");
     super.initState();
-
   }
 
   @override
@@ -50,80 +52,189 @@ class _RecordPageState extends State<RecordPage> {
     return _buildPage(context);
   }
 
-
   BlocProvider<RecordBloc> _buildPage(BuildContext context) {
     return BlocProvider<RecordBloc>(
         create: (_) => getIt<RecordBloc>(),
         child: Scaffold(
-            appBar: AppBar(
-              // Here we take the value from the MyHomePage object that was created by
-              // the App.build method, and use it to set our appbar title.
-              title: Text(widget.title),
-            ),
-            body:
-            Center(
-              // Center is a layout widget. It takes a single child and positions it
-              // in the middle of the parent.
-              child: Column(
-                //
-                // Column has various properties to control how it sizes itself and
-                // how it positions its children. Here we use mainAxisAlignment to
-                // center the children vertically; the main axis here is the vertical
-                // axis because Columns are vertical (the cross axis would be
-                // horizontal).
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  _buildRecognizeStateText(),
-                  _buildSwitchRecognizeButton(),
-                ],
-              ),
-            ),
-            floatingActionButton: _buildCreateRecordButton()
-          //This trailing comma makes auto-formatting nicer for build methods.
+            body: SafeArea(
+                child: Stack(
+          children: [
+            RecognizedEditText(),
+            FooterTools(),
+          ],
         )
-    );
+                //This trailing comma makes auto-formatting nicer for build methods.
+                )));
   }
 
   BlocBuilder _buildCreateRecordButton() {
-    return BlocBuilder<RecordBloc, RecordState>(
-        builder: (context, state) {
-      if (state is RecordState) {
-
-      }
-        return FloatingActionButton(
-          onPressed: ()=> {
-              BlocProvider.of<RecordBloc>(context)
+    return BlocBuilder<RecordBloc, RecordState>(builder: (context, state) {
+      if (state is RecordState) {}
+      return FloatingActionButton(
+        onPressed: () => {
+          BlocProvider.of<RecordBloc>(context)
               .add(RecordRequestPermissionsEvent())
-          },
-          tooltip: 'Record new',
-          child: const Icon(Icons.add),
-        );
-      });
+        },
+        tooltip: 'Record new',
+        child: const Icon(Icons.add),
+      );
+    });
+  }
+}
+
+class RecognizedEditText extends StatelessWidget {
+  final ScrollController scrollController = ScrollController();
+  late FocusNode _focusNode;
+
+  RecognizedEditText({Key? key}) : super(key: key) {
   }
 
-  BlocBuilder _buildSwitchRecognizeButton() {
-    return BlocBuilder<RecordBloc, RecordState>(
-      builder: (context, state) {
-        if (state is RecordState) {
-          return ElevatedButton(
-            key: Key("buttonSwitchRecognize"),
-            // shape: RoundedRectangleBorder(
-            //   borderRadius: new BorderRadius.circular(4.0),
-            // ),
-            // color: CustomColor.logoBlue,
-            onPressed: () {
-              BlocProvider.of<RecordBloc>(context).add(
-                  RecordRecognizeSwitchEvent(),
-              );
-            },
-            child: Text(
-              "Switch recognizer",
-              style: ThemeUtils.mainTheme.textTheme.headline4,
-            ),
-          );
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<RecordBloc, RecordState>(builder: (context, state) {
+      RecordBloc recordBloc = BlocProvider.of<RecordBloc>(context);
+      Document newDocument = Document();
+      String allText = state.recordRecognized.allText;
+      Logger.root.info("RecognizedEditText: text=$allText");
+      if (allText.isNotEmpty) {
+        newDocument.insert(0, allText);
+        String lastRecognizeText = state.recordRecognized.lastRecognizedText;
+        if (lastRecognizeText.isNotEmpty) {
+          newDocument.format(allText.length - lastRecognizeText.length,
+              lastRecognizeText.length, Attribute.bold);
         }
-        return Container();
-      },
+      } else {
+        newDocument.insert(0, " ");
+      }
+      QuillController controller = QuillController(
+        document: newDocument,
+        selection: TextSelection.collapsed(offset: newDocument.length),
+      );
+      controller.changes.listen((event) {
+        if (event.item3 == ChangeSource.LOCAL) {
+          var currentDocument = controller.document;
+          var newText = currentDocument.toPlainTextCorrect();
+          Logger.root.info("RecordPage textChanged text=${newText}");
+          recordBloc.state.recordRecognized.updateText(newText);
+        }
+      });
+      _focusNode = FocusNode();
+      var editor = QuillEditor(
+        controller: controller,
+        focusNode: _focusNode,
+        padding: const EdgeInsets.only(
+            left: 8,
+            right: 8,
+            top: HeaderTools.roundRadius,
+            bottom: FooterTools.roundRadius),
+        autoFocus: true,
+        expands: true,
+        readOnly: false,
+        scrollController: scrollController,
+        scrollable: true,
+      );
+      // _focusNode.requestFocus();
+      recordBloc.stream.listen((event) {
+        scrollController.animateTo(
+          scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.linear,
+        );
+      });
+      return Container(
+        child: Padding(
+          padding: const EdgeInsets.only(
+              top: HeaderTools.height - HeaderTools.roundRadius,
+              bottom: FooterTools.height - FooterTools.roundRadius),
+          child: editor,
+          // TextField(
+          //   decoration: const InputDecoration(
+          //     border: OutlineInputBorder(),
+          //     hintText: 'Recognized text...',
+          //   ),
+          //   controller: textController,
+          // ),
+        ),
+      );
+    });
+  }
+}
+
+class HeaderTools extends StatelessWidget {
+  HeaderTools({Key? key}) : super(key: key) {}
+  static const double height = 60;
+  static const double roundRadius = 18;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+        alignment: Alignment.topCenter,
+        child: SizedBox(
+          width: double.infinity,
+          height: height,
+          // height: double.infinity,
+          child: Container(
+              decoration: BoxDecoration(
+                  color: Theme.of(context).primaryColor,
+                  borderRadius: const BorderRadius.only(
+                      bottomLeft: Radius.circular(roundRadius),
+                      bottomRight: Radius.circular(roundRadius))),
+              child: Row(
+                children: [
+                  Padding(
+                      padding: const EdgeInsets.only(left: 10),
+                      child: IconButton(
+                          alignment: Alignment.centerLeft,
+                          onPressed: () => {
+                                if (Navigator.canPop(context))
+                                  {Navigator.pop(context)}
+                              },
+                          icon: Icon(
+                            Icons.arrow_back,
+                            size: 34,
+                            color: Theme.of(context).iconTheme.color,
+                          )))
+                ],
+              )),
+        ));
+  }
+}
+
+class FooterTools extends StatelessWidget {
+  FooterTools({Key? key}) : super(key: key) {}
+  static const double height = 160;
+  static const double roundRadius = 18;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      alignment: Alignment.bottomCenter,
+      child: SizedBox(
+          width: double.infinity,
+          height: height,
+          // height: double.infinity,
+          child: Container(
+              decoration: BoxDecoration(
+                  color: Theme.of(context).primaryColor,
+                  borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(roundRadius),
+                      topRight: Radius.circular(roundRadius))),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // _buildRecognizeStateText(),
+                  Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        ClearButton(),
+                        Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 24),
+                            child: RecordButton()),
+                        SaveButton()
+                      ])
+                ],
+              ))),
     );
   }
 
@@ -131,12 +242,13 @@ class _RecordPageState extends State<RecordPage> {
     return BlocBuilder<RecordBloc, RecordState>(
       builder: (context, state) {
         if (state is RecordState) {
-          Logger.root.info("HomePage: _buildRecognizeStateText: recognizeState=${state.recognizeState}");
+          Logger.root.info(
+              "RecordPage: _buildRecognizeStateText: recognizeState=${state.recognizeState}");
           return Container(
             key: Key("textRecognizeState"),
             child: Text(
               "Recognize state: " + getRecognizeStateName(state.recognizeState),
-              style: ThemeUtils.mainTheme.textTheme.headline4,
+              style: Theme.of(context).textTheme.headline2,
             ),
           );
         }
@@ -160,5 +272,162 @@ class _RecordPageState extends State<RecordPage> {
       default:
         return "Preparing...";
     }
+  }
+}
+
+class RecordButton extends StatelessWidget {
+  double size = 85;
+
+  RecordButton({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+        width: size,
+        height: size,
+        // height: double.infinity,
+        child: BlocBuilder<RecordBloc, RecordState>(builder: (context, state) {
+          bool isButtonEnabled =
+              state.recognizeState != RecognizeState.preparing;
+          var iconData = _getRecognizeStateIcon(state.recognizeState);
+          var iconColor = Theme.of(context)
+              .iconTheme
+              .color
+              ?.withOpacity(isButtonEnabled ? 1 : 0.5);
+          return Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                shape: BoxShape.circle,
+              ),
+              child: MaterialButton(
+                  key: Key("buttonSwitchRecognize"),
+                  shape: const CircleBorder(),
+                  onPressed: (!isButtonEnabled)
+                      ? null
+                      : () => {
+                            BlocProvider.of<RecordBloc>(context).add(
+                              RecordRecognizeSwitchEvent(),
+                            ),
+                          },
+                  child: Align(
+                    alignment: Alignment.center,
+                    child: Icon(
+                      iconData,
+                      color: iconColor,
+                      size: 50,
+                    ),
+                  )));
+        }));
+  }
+
+  IconData _getRecognizeStateIcon(RecognizeState? state) {
+    switch (state) {
+      case RecognizeState.idle:
+        return Icons.fiber_manual_record;
+      case RecognizeState.ready:
+        return Icons.fiber_manual_record_outlined;
+      case RecognizeState.stared:
+        return Icons.pause_circle_outline;
+      case RecognizeState.paused:
+        return Icons.fiber_manual_record_outlined;
+      case RecognizeState.stopped:
+        return Icons.fiber_manual_record_outlined;
+      default:
+        return Icons.fiber_manual_record;
+    }
+  }
+}
+
+class ClearButton extends StatelessWidget {
+  double size = 60;
+
+  ClearButton({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+        width: size,
+        height: size,
+        // height: double.infinity,
+        child: BlocBuilder<RecordBloc, RecordState>(builder: (context, state) {
+          bool isButtonEnabled = !state.recordRecognized.isEmpty() &&
+              (state.recognizeState == RecognizeState.paused ||
+                  state.recognizeState == RecognizeState.ready);
+          var iconData = Icons.clear;
+          var iconColor = Theme.of(context)
+              .iconTheme
+              .color
+              ?.withOpacity(isButtonEnabled ? 1.0 : 0.5);
+          return Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                shape: BoxShape.circle,
+              ),
+              child: MaterialButton(
+                  key: Key("buttonSwitchRecognize"),
+                  shape: const CircleBorder(),
+                  onPressed: (!isButtonEnabled)
+                      ? null
+                      : () => {
+                            BlocProvider.of<RecordBloc>(context).add(
+                              RecordRecognizeClearEvent(),
+                            ),
+                          },
+                  child: Align(
+                    alignment: Alignment.center,
+                    child: Icon(
+                      iconData,
+                      color: iconColor,
+                      size: 30,
+                    ),
+                  )));
+        }));
+  }
+}
+
+class SaveButton extends StatelessWidget {
+  double size = 60;
+
+  SaveButton({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+        width: size,
+        height: size,
+        // height: double.infinity,
+        child: BlocBuilder<RecordBloc, RecordState>(builder: (context, state) {
+          bool isButtonEnabled = !state.recordRecognized.isEmpty() &&
+              (state.recognizeState == RecognizeState.paused ||
+                  state.recognizeState == RecognizeState.ready);
+          var iconData = Icons.check;
+          var iconColor = Theme.of(context)
+              .iconTheme
+              .color
+              ?.withOpacity(isButtonEnabled ? 1.0 : 0.5);
+          return Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                shape: BoxShape.circle,
+              ),
+              child: MaterialButton(
+                  key: Key("buttonSwitchRecognize"),
+                  shape: const CircleBorder(),
+                  onPressed: (!isButtonEnabled)
+                      ? null
+                      : () => {
+                            BlocProvider.of<RecordBloc>(context).add(
+                              RecordRecognizeSaveEvent(),
+                            ),
+                          },
+                  child: Align(
+                    alignment: Alignment.center,
+                    child: Icon(
+                      iconData,
+                      color: iconColor,
+                      size: 30,
+                    ),
+                  )));
+        }));
   }
 }

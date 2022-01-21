@@ -67,6 +67,7 @@ class RecognizeManager(
         if (state != RecognizeState.IDLE) {
             release()
         }
+        setState(RecognizeState.PREPARING)
         StorageService.unpack(context, "model-${params.locale}", PATH_MODEL_DIR,
                 { model: Model ->
                     Log.d(LOG_TAG, "initModel: model initialized")

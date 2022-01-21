@@ -1,11 +1,13 @@
 
 import 'dart:async';
 
+import 'package:voice_note/domain/entity/recognize_result.dart';
 import 'package:voice_note/domain/entity/recognize_state.dart';
 
 abstract class RecognizeRepository {
 
   abstract StreamController<RecognizeStateUpdate> recognizeStateStream;
+  abstract StreamController<RecognizeResult> recognizeResultStream;
 
   Future<void> configureRecognize();
   Future<void> startRecognize();

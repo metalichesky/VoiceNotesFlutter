@@ -1,6 +1,7 @@
 
 enum RecognizeState {
   idle,
+  preparing,
   ready,
   stared,
   paused,
@@ -28,14 +29,16 @@ extension RecognizeStateExtension on RecognizeState {
     switch (this) {
       case RecognizeState.idle:
         return 0;
-      case RecognizeState.ready:
+      case RecognizeState.preparing:
         return 1;
-      case RecognizeState.stared:
+      case RecognizeState.ready:
         return 2;
-      case RecognizeState.paused:
+      case RecognizeState.stared:
         return 3;
-      case RecognizeState.stopped:
+      case RecognizeState.paused:
         return 4;
+      case RecognizeState.stopped:
+        return 5;
       default:
         return 0;
     }

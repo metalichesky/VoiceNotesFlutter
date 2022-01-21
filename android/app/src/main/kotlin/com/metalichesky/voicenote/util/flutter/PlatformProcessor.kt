@@ -64,7 +64,8 @@ class PlatformProcessor(
             }
 
             override fun onRecognized(result: RecognizeResult) {
-                if (result != previousRecognized) {
+                if (result != previousRecognized || !result.isEmpty() && previousRecognized?.isEmpty() == true) {
+                    channelRecognize.onRecognizeResult(result)
                     previousRecognized = result
                     Log.d(LOG_TAG, "onRecognized: result=${result}")
                 }

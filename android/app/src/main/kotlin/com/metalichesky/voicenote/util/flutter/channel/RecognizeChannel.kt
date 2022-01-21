@@ -2,6 +2,7 @@ package com.metalichesky.voicenote.util.flutter.channel
 
 import com.metalichesky.voicenote.util.flutter.PlatformUtils
 import com.metalichesky.voicenote.util.recognize.RecognizeParams
+import com.metalichesky.voicenote.util.recognize.RecognizeResult
 import com.metalichesky.voicenote.util.recognize.RecognizeState
 import io.flutter.Log
 import io.flutter.embedding.engine.FlutterEngine
@@ -62,6 +63,15 @@ class RecognizeChannel(
                         "oldState" to oldState.stateId,
                         "newState" to newState.stateId
                 )
+        )
+    }
+
+    fun onRecognizeResult(recognizeResult: RecognizeResult) {
+        channel?.invokeMethod(
+            "onRecognizeResult",
+            hashMapOf(
+                "recognizeResult" to recognizeResult.toString(),
+            )
         )
     }
 

@@ -1,11 +1,17 @@
 part of 'record_bloc.dart';
 
-@immutable
 abstract class RecordState {
   RecognizeState? recognizeState;
   RecognizeState? oldRecognizeState;
+  RecognizeResult? lastRecognizeResult;
+  RecordRecognized recordRecognized = RecordRecognized();
+
   bool audioPermissionsGranted;
   bool storagePermissionsGranted;
+
+  bool isAllPermissionsGranted() {
+    return audioPermissionsGranted && storagePermissionsGranted;
+  }
 
   RecordState({
     this.recognizeState = RecognizeState.idle,
@@ -19,6 +25,8 @@ abstract class RecordState {
     this.storagePermissionsGranted = state.storagePermissionsGranted;
     this.recognizeState = state.recognizeState;
     this.oldRecognizeState = state.oldRecognizeState;
+    this.lastRecognizeResult = state.lastRecognizeResult;
+    this.recordRecognized = state.recordRecognized;
   }
 }
 
@@ -31,5 +39,13 @@ class HomeRecognizeStateUpdatedState extends RecordState {
   void setUpdate(RecognizeStateUpdate recognizeStateUpdate) {
     this.recognizeState = recognizeStateUpdate.newState;
     this.oldRecognizeState = recognizeStateUpdate.oldState;
+  }
+}
+
+class HomeRecognizeResultUpdatedState extends RecordState {
+
+  bool addResult(RecognizeResult recognizeResult) {
+    this.lastRecognizeResult = recognizeResult;
+    return this.recordRecognized.addResult(recognizeResult);
   }
 }
