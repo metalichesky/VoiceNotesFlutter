@@ -1,0 +1,697 @@
+package com.github.olga_yakovleva.rhvoice;
+
+
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.SharedPreferences;
+import android.os.Build;
+import android.os.Bundle;
+import android.os.Handler;
+import android.preference.PreferenceManager;
+import android.speech.tts.SynthesisCallback;
+import android.speech.tts.TextToSpeech;
+import android.speech.tts.Voice;
+import android.text.TextUtils;
+import android.util.Log;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
+
+import com.github.olga_yakovleva.rhvoice.data.Data;
+import com.github.olga_yakovleva.rhvoice.language.LanguagePack;
+import com.github.olga_yakovleva.rhvoice.logger.CoreLogger;
+import com.github.olga_yakovleva.rhvoice.player.Player;
+import com.github.olga_yakovleva.rhvoice.voice.AndroidVoiceInfo;
+import com.github.olga_yakovleva.rhvoice.voice.VoicePack;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+public final class RHVoice {
+    private static final String TAG = RHVoice.class.getSimpleName();
+    public static final String KEY_PARAM_TEST_VOICE = "com.github.olga_yakovleva.rhvoice.android.param_test_voice";
+    private static final int[] languageSupportConstants = {TextToSpeech.LANG_NOT_SUPPORTED, TextToSpeech.LANG_AVAILABLE, TextToSpeech.LANG_COUNTRY_AVAILABLE, TextToSpeech.LANG_COUNTRY_VAR_AVAILABLE};
+    private static final Pattern DEFAULT_VOICE_NAME_PATTERN = Pattern.compile("^([a-z]{3})-default$");
+    public static final String ACTION_CHECK_DATA = "com.github.olga_yakovleva.rhvoice.android.action.service_check_data";
+    public static final String ACTION_CONFIG_CHANGE = "org.rhvoice.action.CONFIG_CHANGE";
+    private final BroadcastReceiver dataStateReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (BuildConfig.DEBUG) {
+                Log.v(TAG, "Checking data");
+            }
+            List<String> oldPaths = paths;
+            paths = Data.getPaths(context);
+            boolean changed = !paths.equals(oldPaths);
+            if (BuildConfig.DEBUG) {
+                Log.v(TAG, "Paths changed: " + changed);
+            }
+            if (changed || ACTION_CONFIG_CHANGE.equals(intent.getAction())) {
+                initialize();
+            }
+        }
+    };
+    private final BroadcastReceiver packageReceiver = new OnPackageReceiver();
+
+    private static interface SettingValueTranslator {
+        public Object load(SharedPreferences prefs, String key);
+
+        public String translate(Object value);
+    }
+
+    private static final SettingValueTranslator prosodySettingValueTranslator = new SettingValueTranslator() {
+        public Object load(SharedPreferences prefs, String key) {
+            return prefs.getString(key, "100");
+        }
+
+        public String translate(Object value) {
+            try {
+                int n = Integer.parseInt((String) value);
+                float f = n / 100.0f;
+                return String.valueOf(f);
+            } catch (NumberFormatException e) {
+                return "1";
+            }
+        }
+    };
+
+    private static final SettingValueTranslator yesSettingValueTranslator = new SettingValueTranslator() {
+        public Object load(SharedPreferences prefs, String key) {
+            Boolean value = prefs.getBoolean(key, true);
+            return value;
+        }
+
+        public String translate(Object value) {
+            return String.valueOf(value).toLowerCase();
+        }
+    };
+
+    private static final SettingValueTranslator qualitySettingValueTranslator = new SettingValueTranslator() {
+        public Object load(SharedPreferences prefs, String key) {
+            return prefs.getString(key, "std");
+        }
+
+        public String translate(Object value) {
+            return value.toString();
+        }
+    };
+
+    private static class MappedSetting {
+        public final String prefKey;
+        public Object prefValue;
+        public final String nativeKey;
+        public final SettingValueTranslator valueTranslator;
+
+        public MappedSetting(String prefKey, String nativeKey, SettingValueTranslator valueTranslator) {
+            this.prefKey = prefKey;
+            this.nativeKey = nativeKey;
+            this.valueTranslator = valueTranslator;
+        }
+    }
+
+    private static class Tts {
+        public TTSEngine engine = null;
+        public List<AndroidVoiceInfo> voices;
+        public Map<String, LanguageInfo> languageIndex;
+        public Map<String, AndroidVoiceInfo> voiceIndex;
+        public List<MappedSetting> mappedSettings;
+
+        public Tts() {
+            voices = new ArrayList<AndroidVoiceInfo>();
+            languageIndex = new HashMap<String, LanguageInfo>();
+            voiceIndex = new HashMap<String, AndroidVoiceInfo>();
+            mappedSettings = new ArrayList<MappedSetting>();
+        }
+
+        public Tts(Tts other, boolean passEngine) {
+            this.voices = other.voices;
+            this.languageIndex = other.languageIndex;
+            this.voiceIndex = other.voiceIndex;
+            this.mappedSettings = other.mappedSettings;
+            if (!passEngine)
+                return;
+            this.engine = other.engine;
+            other.engine = null;
+        }
+    }
+
+    private static class TtsManager {
+        private Tts tts;
+        private boolean done;
+
+        public synchronized void reset(Tts newTts) {
+            if (newTts == null)
+                throw new IllegalArgumentException();
+            if (tts != null && tts.engine != null)
+                tts.engine.shutdown();
+            tts = newTts;
+        }
+
+        public synchronized void destroy() {
+            done = true;
+            if (tts != null && tts.engine != null)
+                tts.engine.shutdown();
+            tts = null;
+        }
+
+        public synchronized Tts acquireForSynthesis() {
+            if (done)
+                return null;
+            if (tts == null)
+                return null;
+            if (tts.engine == null)
+                return null;
+            if (tts.voices.isEmpty())
+                return null;
+            Tts result = new Tts(tts, true);
+            return result;
+        }
+
+        public synchronized void release(Tts usedTts) {
+            if (usedTts == null || usedTts.engine == null)
+                throw new IllegalArgumentException();
+            if (done || tts.engine != null)
+                usedTts.engine.shutdown();
+            else
+                tts = new Tts(usedTts, true);
+        }
+
+        public synchronized Tts get() {
+            if (tts == null)
+                return null;
+            return new Tts(tts, false);
+        }
+    }
+
+    static private class Candidate {
+        public AndroidVoiceInfo voice;
+        public int score;
+
+        public Candidate() {
+            voice = null;
+            score = 0;
+        }
+
+        public Candidate(AndroidVoiceInfo voice, String language, String country, String variant) {
+            this.voice = voice;
+            score = voice.getSupportLevel(language, country, variant);
+        }
+    }
+
+    private static class LanguageSettings {
+        public AndroidVoiceInfo voice;
+        public boolean detect;
+    }
+
+    private final Context context;
+    private final TtsManager ttsManager = new TtsManager();
+    private volatile AndroidVoiceInfo currentVoice;
+    @Nullable
+    private volatile Player player;
+    private List<String> paths = new ArrayList<String>();
+    private Handler handler;
+
+    public RHVoice(Context context) {
+        this.context = context;
+    }
+
+    private void registerPackageReceiver() {
+        IntentFilter filter = new IntentFilter(Intent.ACTION_PACKAGE_ADDED);
+        filter.addAction(Intent.ACTION_PACKAGE_FULLY_REMOVED);
+        filter.addDataScheme("package");
+        context.registerReceiver(packageReceiver, filter);
+    }
+
+    private void unregisterPackageReceiver() {
+        context.unregisterReceiver(packageReceiver);
+    }
+
+    private void initialize() {
+        if (BuildConfig.DEBUG) {
+            Log.i(TAG, "Initializing the engine");
+        }
+        if (paths.isEmpty()) {
+            Log.w(TAG, "No voice data");
+            return;
+        }
+        Tts tts = new Tts();
+        try {
+            File configDir = Config.getDir(context);
+            tts.engine = new TTSEngine("", configDir.getAbsolutePath(), paths, CoreLogger.instance);
+        } catch (Exception e) {
+            if (BuildConfig.DEBUG) {
+                Log.e(TAG, "Error during engine initialization", e);
+            }
+            return;
+        }
+        List<VoiceInfo> engineVoices = tts.engine.getVoices();
+        if (engineVoices.isEmpty()) {
+            if (BuildConfig.DEBUG) {
+                Log.w(TAG, "No voices");
+            }
+            tts.engine.shutdown();
+            return;
+        }
+        for (VoiceInfo engineVoice : engineVoices) {
+            AndroidVoiceInfo nextVoice = new AndroidVoiceInfo(engineVoice);
+            if (BuildConfig.DEBUG) {
+                Log.i(TAG, "Found voice " + nextVoice.toString());
+            }
+            tts.voices.add(nextVoice);
+            tts.voiceIndex.put(nextVoice.getName().toLowerCase(), nextVoice);
+            LanguageInfo engineLanguage = engineVoice.getLanguage();
+            tts.languageIndex.put(engineLanguage.getAlpha3Code(), engineLanguage);
+        }
+        for (String lang : tts.languageIndex.keySet()) {
+            tts.mappedSettings.add(new MappedSetting("language." + lang + ".volume", "languages." + lang + ".default_volume", prosodySettingValueTranslator));
+            tts.mappedSettings.add(new MappedSetting("language." + lang + ".rate", "languages." + lang + ".default_rate", prosodySettingValueTranslator));
+            tts.mappedSettings.add(new MappedSetting("language." + lang + ".use_pseudo_english", "languages." + lang + ".use_pseudo_english", yesSettingValueTranslator));
+        }
+        tts.mappedSettings.add(new MappedSetting("quality", "quality", qualitySettingValueTranslator));
+        ttsManager.reset(tts);
+    }
+
+    private void logLanguage(String language, String country, String variant) {
+        Log.v(TAG, "Language: " + language);
+        if (TextUtils.isEmpty(country))
+            return;
+        Log.v(TAG, "Country: " + country);
+        if (TextUtils.isEmpty(variant))
+            return;
+        Log.v(TAG, "Variant: " + variant);
+    }
+
+    private Map<String, LanguageSettings> getLanguageSettings(Tts tts) {
+        Map<String, LanguageSettings> result = new HashMap<String, LanguageSettings>();
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+        for (String language : tts.languageIndex.keySet()) {
+            LanguageSettings settings = new LanguageSettings();
+            String prefVoice = prefs.getString("language." + language + ".voice", null);
+            for (AndroidVoiceInfo voice : tts.voices) {
+                if (!voice.getSource().getLanguage().getAlpha3Code().equals(language))
+                    continue;
+                String voiceName = voice.getSource().getName();
+                if (settings.voice == null) {
+                    settings.voice = voice;
+                    if (prefVoice == null)
+                        break;
+                }
+                if (voiceName.equals(prefVoice)) {
+                    settings.voice = voice;
+                    break;
+                }
+            }
+            settings.detect = prefs.getBoolean("language." + language + ".detect", true);
+            result.put(language, settings);
+        }
+        return result;
+    }
+
+    private String parseDefaultVoiceName(Tts tts, String name) {
+        Matcher matcher = DEFAULT_VOICE_NAME_PATTERN.matcher(name);
+        if (!matcher.find())
+            return null;
+        String code = matcher.group(1);
+        if (!tts.languageIndex.containsKey(code))
+            return null;
+        return code;
+    }
+
+    private Candidate findBestVoice(Tts tts, String language, String country, String variant, String voiceName, boolean testing, Map<String, LanguageSettings> languageSettings) {
+        if (!TextUtils.isEmpty(voiceName)) {
+            AndroidVoiceInfo voice = tts.voiceIndex.get(voiceName.toLowerCase());
+            if (voice != null) {
+                if (testing) {
+                    Candidate c = new Candidate();
+                    c.voice = voice;
+                    c.score = 3;
+                    return c;
+                } else
+                    return new Candidate(voice, language, country, "");
+            } else if (testing)
+                return new Candidate();
+        }
+        Candidate best = new Candidate();
+        for (AndroidVoiceInfo voice : tts.voices) {
+            Candidate candidate = new Candidate(voice, language, country, variant);
+            if (candidate.score > best.score || best.voice == null)
+                best = candidate;
+        }
+        if (!TextUtils.isEmpty(variant) && best.score == 3)
+            return best;
+        if (best.voice == null)
+            best.voice = tts.voices.get(0);
+        LanguageSettings settings = null;
+        if (languageSettings != null)
+            settings = languageSettings.get(best.voice.getLanguage());
+        if (settings == null)
+            return best;
+        if (settings.voice != null)
+            best.voice = settings.voice;
+        return best;
+    }
+
+    private class VoiceInstaller implements Runnable {
+        private final String languageCode;
+        private final String countryCode;
+
+        public VoiceInstaller(String languageCode, String countryCode) {
+            this.languageCode = languageCode;
+            this.countryCode = countryCode;
+        }
+
+        public void run() {
+            LanguagePack lang = Data.findMatchingLanguage(languageCode, countryCode);
+            if (lang == null)
+                return;
+            for (VoicePack voice : lang.getVoices()) {
+                if (voice.getEnabled(context))
+                    return;
+            }
+            VoicePack voice = lang.getDefaultVoice();
+            voice.setEnabled(context, true);
+        }
+    }
+
+    public void setup() {
+        if (BuildConfig.DEBUG) {
+            Log.i(TAG, "Starting the service");
+        }
+        handler = new Handler();
+        paths = Data.getPaths(context);
+        Data.scheduleSync(context, false);
+        IntentFilter filter = new IntentFilter(ACTION_CHECK_DATA);
+        filter.addAction(ACTION_CONFIG_CHANGE);
+        LocalBroadcastManager.getInstance(context).registerReceiver(dataStateReceiver, filter);
+        registerPackageReceiver();
+        initialize();
+    }
+
+    public void release() {
+        LocalBroadcastManager.getInstance(context).unregisterReceiver(dataStateReceiver);
+        unregisterPackageReceiver();
+        ttsManager.destroy();
+    }
+
+    public String[] getLanguage() {
+        if (BuildConfig.DEBUG) {
+            Log.v(TAG, "onGetLanguage called");
+        }
+        String[] result = {"rus", "RUS", ""};
+        AndroidVoiceInfo voice = currentVoice;
+        if (voice == null) {
+            Tts tts = ttsManager.get();
+            if (tts != null) {
+                Locale locale = Locale.getDefault();
+                Candidate bestMatch = findBestVoice(tts, locale.getISO3Language(), locale.getISO3Country(), "", "", false, getLanguageSettings(tts));
+                if (bestMatch.voice != null)
+                    voice = bestMatch.voice;
+            }
+        }
+        if (voice == null)
+            return result;
+        result[0] = voice.getLanguage();
+        result[1] = voice.getCountry();
+        if (BuildConfig.DEBUG) {
+            Log.v(TAG, "onGetLanguage returns " + result[0] + "-" + result[1]);
+        }
+        return result;
+    }
+
+    public int loadLanguage(String language, String country, String variant) {
+        if (BuildConfig.DEBUG) {
+            Log.v(TAG, "onLoadLanguage called");
+        }
+        return getLanguageAvailable(language, country, variant);
+    }
+
+    public int getLanguageAvailable(String language, String country, String variant) {
+        if (BuildConfig.DEBUG) {
+            Log.v(TAG, "onIsLanguageAvailable called");
+            logLanguage(language, country, variant);
+        }
+        Tts tts = ttsManager.get();
+        if (tts == null) {
+            if (BuildConfig.DEBUG) {
+                Log.w(TAG, "Not initialized yet");
+            }
+            return TextToSpeech.LANG_NOT_SUPPORTED;
+        }
+        Candidate bestMatch = findBestVoice(tts, language, country, variant, "", false, null);
+        int result = languageSupportConstants[bestMatch.score];
+        if (BuildConfig.DEBUG) {
+            Log.v(TAG, "Result: " + result);
+        }
+        return result;
+    }
+
+    private void applyMappedSettings(Tts tts) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+        Object oldPrefValue;
+        String nativeValue;
+        for (MappedSetting setting : tts.mappedSettings) {
+            oldPrefValue = setting.prefValue;
+            setting.prefValue = setting.valueTranslator.load(prefs, setting.prefKey);
+            if (oldPrefValue != null && oldPrefValue.equals(setting.prefValue))
+                continue;
+            nativeValue = setting.valueTranslator.translate(setting.prefValue);
+            tts.engine.configure(setting.nativeKey, nativeValue);
+        }
+    }
+
+    public void stop() {
+        if (player != null) {
+            player.stop();
+        }
+    }
+
+    public boolean isPlaying() {
+        return player != null && player.isPlaying();
+    }
+
+    public void synthesizeText(
+            @NonNull RHSynthesisRequest request,
+            @Nullable SynthesisCallback callback,
+            @NonNull Player player
+    ) {
+        this.player = player;
+        if (player == null) {
+            if (BuildConfig.DEBUG) {
+                throw new IllegalStateException("Player should be non null");
+            }
+            if (callback != null) {
+                callback.error();
+            }
+            return;
+        }
+        if (BuildConfig.DEBUG) {
+            Log.v(TAG, "onSynthesize called");
+            logLanguage(request.getLanguage(), request.getCountry(), request.getVariant());
+        }
+        boolean testing = false;
+        Bundle requestParams = request.getParams();
+        if (requestParams != null && requestParams.containsKey(KEY_PARAM_TEST_VOICE)) {
+            testing = true;
+        }
+        Tts tts = ttsManager.acquireForSynthesis();
+        if (tts == null) {
+            if (BuildConfig.DEBUG) {
+                Log.w(TAG, "Not initialized yet");
+            }
+            if (!testing) {
+                handler.post(new VoiceInstaller(request.getLanguage(), request.getCountry()));
+            }
+            if (callback != null) {
+                callback.error();
+            }
+            return;
+        }
+        try {
+            player.start();
+            String language = request.getLanguage();
+            String country = request.getCountry();
+            String variant = request.getVariant();
+            Map<String, LanguageSettings> languageSettings = getLanguageSettings(tts);
+            String voiceName = "";
+            if (testing)
+                voiceName = requestParams.getString(KEY_PARAM_TEST_VOICE);
+            else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                voiceName = request.getVoiceName();
+                if (!TextUtils.isEmpty(voiceName)) {
+                    if (BuildConfig.DEBUG) {
+                        Log.v(TAG, "Voice name: " + voiceName);
+                    }
+                    String code = parseDefaultVoiceName(tts, voiceName);
+                    if (code != null) {
+                        if (BuildConfig.DEBUG) {
+                            Log.v(TAG, "Default voice for " + code);
+                        }
+                        language = code;
+                        country = "";
+                        variant = "";
+                        voiceName = "";
+                    }
+                }
+            }
+            final Candidate bestMatch = findBestVoice(tts, language, country, variant, voiceName, testing, languageSettings);
+            if (bestMatch.voice == null) {
+                if (BuildConfig.DEBUG) {
+                    Log.e(TAG, "Unsupported language");
+                }
+                if (!testing)
+                    handler.post(new VoiceInstaller(language, country));
+                if (callback != null) {
+                    callback.error();
+                }
+                return;
+            }
+            if (BuildConfig.DEBUG) {
+                Log.v(TAG, "Selected voice: " + bestMatch.voice.getSource().getName());
+            }
+            currentVoice = bestMatch.voice;
+            StringBuilder voiceProfileSpecBuilder = new StringBuilder();
+            voiceProfileSpecBuilder.append(bestMatch.voice.getSource().getName());
+            for (Map.Entry<String, LanguageSettings> entry : languageSettings.entrySet()) {
+                if (entry.getKey().equals(bestMatch.voice.getLanguage()))
+                    continue;
+                if (entry.getValue().detect) {
+                    String name = entry.getValue().voice.getSource().getName();
+                    voiceProfileSpecBuilder.append("+").append(name);
+                }
+            }
+            String profileSpec = voiceProfileSpecBuilder.toString();
+            if (BuildConfig.DEBUG) {
+                Log.v(TAG, "Synthesizing the following text: " + request.getCharSequenceText().toString());
+            }
+            int rate = request.getSpeechRate();
+            if (BuildConfig.DEBUG) {
+                Log.v(TAG, "rate=" + rate);
+            }
+            int pitch = request.getPitch();
+            if (BuildConfig.DEBUG) {
+                Log.v(TAG, "pitch=" + pitch);
+            }
+            if (BuildConfig.DEBUG) {
+                Log.v(TAG, "Profile: " + profileSpec);
+            }
+            applyMappedSettings(tts);
+            final SynthesisParameters params = new SynthesisParameters();
+            params.setVoiceProfile(profileSpec);
+            params.setRate(((double) rate) / 100.0);
+            params.setPitch(((double) pitch) / 100.0);
+            player.setSampleRate(24000);
+            tts.engine.speak(request.getCharSequenceText().toString(), params, player);
+            if (callback != null) {
+                callback.done();
+            }
+        } catch (RHVoiceException e) {
+            if (BuildConfig.DEBUG) {
+                Log.e(TAG, "Synthesis error", e);
+            }
+            if (callback != null) {
+                callback.error();
+            }
+        } catch (Exception e) {
+            if (BuildConfig.DEBUG) {
+                Log.e(TAG, "Synthesis error", e);
+            }
+            if (callback != null) {
+                callback.error();
+            }
+        } finally {
+            player.stop();
+            ttsManager.release(tts);
+        }
+    }
+
+    public String getDefaultVoiceNameFor(String language, String country, String variant) {
+        if (BuildConfig.DEBUG) {
+            Log.v(TAG, "onGetDefaultVoiceNameFor called");
+            logLanguage(language, country, variant);
+        }
+        Tts tts = ttsManager.get();
+        if (tts == null) {
+            return null;
+        }
+        if (!tts.languageIndex.containsKey(language)) {
+            return null;
+        }
+        String name = language + "-default";
+        if (BuildConfig.DEBUG) {
+            Log.v(TAG, "Voice name: " + name);
+        }
+        return name;
+    }
+
+    public List<Voice> getVoices() {
+        if (BuildConfig.DEBUG) {
+            Log.v(TAG, "onGetVoices called");
+        }
+        List<Voice> result = new ArrayList<Voice>();
+        Tts tts = ttsManager.get();
+        if (tts == null)
+            return result;
+        Voice v = null;
+        for (AndroidVoiceInfo voice : tts.voices) {
+            v = voice.getAndroidVoice();
+            if (BuildConfig.DEBUG) {
+                Log.v(TAG, "Voice: " + v.toString());
+            }
+            result.add(v);
+        }
+        for (LanguageInfo lang : tts.languageIndex.values()) {
+            Locale loc = new Locale(lang.getAlpha2Code(), lang.getAlpha2CountryCode());
+            v = new Voice(lang.getAlpha3Code() + "-default", loc, Voice.QUALITY_NORMAL, Voice.LATENCY_NORMAL, false, new HashSet<String>());
+            if (BuildConfig.DEBUG) {
+                Log.v(TAG, "Default voice: " + v.toString());
+            }
+            result.add(v);
+        }
+        return result;
+    }
+
+    public int loadVoice(String name) {
+        if (BuildConfig.DEBUG) {
+            Log.v(TAG, "onLoadVoice called with voice name " + name);
+        }
+        return isValidVoiceName(name);
+    }
+
+    public int isValidVoiceName(String name) {
+        if (BuildConfig.DEBUG) {
+            Log.v(TAG, "onIsValidVoiceName called for name " + name);
+        }
+        Tts tts = ttsManager.get();
+        if (tts == null) {
+            return TextToSpeech.ERROR;
+        }
+        String code = parseDefaultVoiceName(tts, name);
+        if (code != null) {
+            if (BuildConfig.DEBUG) {
+                Log.v(TAG, "Default voice name for " + code);
+            }
+            return TextToSpeech.SUCCESS;
+        }
+        if (tts.voiceIndex.containsKey(name.toLowerCase())) {
+            if (BuildConfig.DEBUG) {
+                Log.v(TAG, "Voice found");
+            }
+            return TextToSpeech.SUCCESS;
+        } else {
+            if (BuildConfig.DEBUG) {
+                Log.v(TAG, "Voice not found");
+            }
+            return TextToSpeech.ERROR;
+        }
+    }
+}

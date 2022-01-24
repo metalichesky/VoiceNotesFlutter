@@ -1,0 +1,60 @@
+plugins {
+    id 'com.android.library'
+}
+
+def buildConfig = [:]
+buildConfig.versionName = '0.1'
+buildConfig.versionCode = 1
+project.ext.set("buildConfig", buildConfig)
+
+android {
+    compileSdkVersion 31
+
+    defaultConfig {
+        minSdkVersion 21
+        targetSdkVersion 31
+        versionCode project.ext.buildConfig.versionCode
+        versionName project.ext.buildConfig.versionName
+        buildConfigField 'int', 'VERSION_CODE', "${project.ext.buildConfig.versionCode}"
+        buildConfigField 'String', 'VERSION_NAME', "\"${project.ext.buildConfig.versionName}\""
+        ndk {
+            abiFilters 'armeabi-v7a', 'x86', 'arm64-v8a', 'x86_64'
+        }
+        externalNativeBuild {
+            ndkBuild {
+                arguments 'V=1'
+            }
+        }
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        consumerProguardFiles "consumer-rules.pro"
+    }
+
+    externalNativeBuild {
+        ndkBuild {
+            path 'src/main/jni/Android.mk'
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.4.1'
+    implementation 'androidx.work:work-runtime:2.7.1'
+    implementation 'androidx.localbroadcastmanager:localbroadcastmanager:1.1.0'
+
+
+    testImplementation 'junit:junit:4.+'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.3'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
+}

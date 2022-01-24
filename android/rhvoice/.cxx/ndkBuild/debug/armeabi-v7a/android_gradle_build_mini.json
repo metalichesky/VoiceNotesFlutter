@@ -1,0 +1,40 @@
+{
+  "buildFiles": [
+    "C:\\AndroidWork\\AndroidEducational\\voice_note\\android\\rhvoice\\src\\main\\jni\\Android.mk",
+    "C:\\AndroidWork\\AndroidEducational\\voice_note\\android\\rhvoice\\src\\main\\jni\\Application.mk"
+  ],
+  "cleanCommands": [
+    "C:\\Android\\sdk\\ndk\\21.1.6352462\\ndk-build.cmd NDK_PROJECT_PATH\u003dnull APP_BUILD_SCRIPT\u003dC:\\AndroidWork\\AndroidEducational\\voice_note\\android\\rhvoice\\src\\main\\jni\\Android.mk NDK_APPLICATION_MK\u003dC:\\AndroidWork\\AndroidEducational\\voice_note\\android\\rhvoice\\src\\main\\jni\\Application.mk APP_ABI\u003darmeabi-v7a NDK_ALL_ABIS\u003darmeabi-v7a NDK_DEBUG\u003d1 APP_PLATFORM\u003dandroid-21 NDK_OUT\u003dC:/AndroidWork/AndroidEducational/voice_note/build/rhvoice/intermediates/ndkBuild/debug/obj NDK_LIBS_OUT\u003dC:\\AndroidWork\\AndroidEducational\\voice_note\\build\\rhvoice\\intermediates\\ndkBuild\\debug\\lib V\u003d1 clean"
+  ],
+  "buildTargetsCommand": "C:\\Android\\sdk\\ndk\\21.1.6352462\\ndk-build.cmd NDK_PROJECT_PATH\u003dnull APP_BUILD_SCRIPT\u003dC:\\AndroidWork\\AndroidEducational\\voice_note\\android\\rhvoice\\src\\main\\jni\\Android.mk NDK_APPLICATION_MK\u003dC:\\AndroidWork\\AndroidEducational\\voice_note\\android\\rhvoice\\src\\main\\jni\\Application.mk APP_ABI\u003darmeabi-v7a NDK_ALL_ABIS\u003darmeabi-v7a NDK_DEBUG\u003d1 APP_PLATFORM\u003dandroid-21 NDK_OUT\u003dC:/AndroidWork/AndroidEducational/voice_note/build/rhvoice/intermediates/ndkBuild/debug/obj NDK_LIBS_OUT\u003dC:\\AndroidWork\\AndroidEducational\\voice_note\\build\\rhvoice\\intermediates\\ndkBuild\\debug\\lib V\u003d1 {LIST_OF_TARGETS_TO_BUILD}",
+  "libraries": {
+    "RHVoice_jni-debug-armeabi-v7a": {
+      "artifactName": "RHVoice_jni",
+      "buildCommand": "C:\\Android\\sdk\\ndk\\21.1.6352462\\ndk-build.cmd NDK_PROJECT_PATH\u003dnull APP_BUILD_SCRIPT\u003dC:\\AndroidWork\\AndroidEducational\\voice_note\\android\\rhvoice\\src\\main\\jni\\Android.mk NDK_APPLICATION_MK\u003dC:\\AndroidWork\\AndroidEducational\\voice_note\\android\\rhvoice\\src\\main\\jni\\Application.mk APP_ABI\u003darmeabi-v7a NDK_ALL_ABIS\u003darmeabi-v7a NDK_DEBUG\u003d1 APP_PLATFORM\u003dandroid-21 NDK_OUT\u003dC:/AndroidWork/AndroidEducational/voice_note/build/rhvoice/intermediates/ndkBuild/debug/obj NDK_LIBS_OUT\u003dC:\\AndroidWork\\AndroidEducational\\voice_note\\build\\rhvoice\\intermediates\\ndkBuild\\debug\\lib V\u003d1 C:/AndroidWork/AndroidEducational/voice_note/build/rhvoice/intermediates/ndkBuild/debug/obj/local/armeabi-v7a/libRHVoice_jni.so",
+      "abi": "armeabi-v7a",
+      "output": "C:\\AndroidWork\\AndroidEducational\\voice_note\\build\\rhvoice\\intermediates\\ndkBuild\\debug\\obj\\local\\armeabi-v7a\\libRHVoice_jni.so",
+      "runtimeFiles": []
+    },
+    "hts_engine-debug-armeabi-v7a": {
+      "artifactName": "hts_engine",
+      "buildCommand": "C:\\Android\\sdk\\ndk\\21.1.6352462\\ndk-build.cmd NDK_PROJECT_PATH\u003dnull APP_BUILD_SCRIPT\u003dC:\\AndroidWork\\AndroidEducational\\voice_note\\android\\rhvoice\\src\\main\\jni\\Android.mk NDK_APPLICATION_MK\u003dC:\\AndroidWork\\AndroidEducational\\voice_note\\android\\rhvoice\\src\\main\\jni\\Application.mk APP_ABI\u003darmeabi-v7a NDK_ALL_ABIS\u003darmeabi-v7a NDK_DEBUG\u003d1 APP_PLATFORM\u003dandroid-21 NDK_OUT\u003dC:/AndroidWork/AndroidEducational/voice_note/build/rhvoice/intermediates/ndkBuild/debug/obj NDK_LIBS_OUT\u003dC:\\AndroidWork\\AndroidEducational\\voice_note\\build\\rhvoice\\intermediates\\ndkBuild\\debug\\lib V\u003d1 C:/AndroidWork/AndroidEducational/voice_note/build/rhvoice/intermediates/ndkBuild/debug/obj/local/armeabi-v7a/libhts_engine.a",
+      "abi": "armeabi-v7a",
+      "output": "C:\\AndroidWork\\AndroidEducational\\voice_note\\build\\rhvoice\\intermediates\\ndkBuild\\debug\\obj\\local\\armeabi-v7a\\libhts_engine.a",
+      "runtimeFiles": []
+    },
+    "RHVoice_core-debug-armeabi-v7a": {
+      "artifactName": "RHVoice_core",
+      "buildCommand": "C:\\Android\\sdk\\ndk\\21.1.6352462\\ndk-build.cmd NDK_PROJECT_PATH\u003dnull APP_BUILD_SCRIPT\u003dC:\\AndroidWork\\AndroidEducational\\voice_note\\android\\rhvoice\\src\\main\\jni\\Android.mk NDK_APPLICATION_MK\u003dC:\\AndroidWork\\AndroidEducational\\voice_note\\android\\rhvoice\\src\\main\\jni\\Application.mk APP_ABI\u003darmeabi-v7a NDK_ALL_ABIS\u003darmeabi-v7a NDK_DEBUG\u003d1 APP_PLATFORM\u003dandroid-21 NDK_OUT\u003dC:/AndroidWork/AndroidEducational/voice_note/build/rhvoice/intermediates/ndkBuild/debug/obj NDK_LIBS_OUT\u003dC:\\AndroidWork\\AndroidEducational\\voice_note\\build\\rhvoice\\intermediates\\ndkBuild\\debug\\lib V\u003d1 C:/AndroidWork/AndroidEducational/voice_note/build/rhvoice/intermediates/ndkBuild/debug/obj/local/armeabi-v7a/libRHVoice_core.a",
+      "abi": "armeabi-v7a",
+      "output": "C:\\AndroidWork\\AndroidEducational\\voice_note\\build\\rhvoice\\intermediates\\ndkBuild\\debug\\obj\\local\\armeabi-v7a\\libRHVoice_core.a",
+      "runtimeFiles": []
+    },
+    "mage-debug-armeabi-v7a": {
+      "artifactName": "mage",
+      "buildCommand": "C:\\Android\\sdk\\ndk\\21.1.6352462\\ndk-build.cmd NDK_PROJECT_PATH\u003dnull APP_BUILD_SCRIPT\u003dC:\\AndroidWork\\AndroidEducational\\voice_note\\android\\rhvoice\\src\\main\\jni\\Android.mk NDK_APPLICATION_MK\u003dC:\\AndroidWork\\AndroidEducational\\voice_note\\android\\rhvoice\\src\\main\\jni\\Application.mk APP_ABI\u003darmeabi-v7a NDK_ALL_ABIS\u003darmeabi-v7a NDK_DEBUG\u003d1 APP_PLATFORM\u003dandroid-21 NDK_OUT\u003dC:/AndroidWork/AndroidEducational/voice_note/build/rhvoice/intermediates/ndkBuild/debug/obj NDK_LIBS_OUT\u003dC:\\AndroidWork\\AndroidEducational\\voice_note\\build\\rhvoice\\intermediates\\ndkBuild\\debug\\lib V\u003d1 C:/AndroidWork/AndroidEducational/voice_note/build/rhvoice/intermediates/ndkBuild/debug/obj/local/armeabi-v7a/libmage.a",
+      "abi": "armeabi-v7a",
+      "output": "C:\\AndroidWork\\AndroidEducational\\voice_note\\build\\rhvoice\\intermediates\\ndkBuild\\debug\\obj\\local\\armeabi-v7a\\libmage.a",
+      "runtimeFiles": []
+    }
+  }
+}
