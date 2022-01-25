@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:voice_note/dependencies.dart' as di;
 import 'package:logging/logging.dart';
@@ -7,11 +8,11 @@ import 'core/util/router.dart';
 import 'core/util/theme.dart';
 
 void main() async {
-  //
   WidgetsFlutterBinding.ensureInitialized();
   //Inject all the dependencies and wait for it is done (i.e. UI won't built until all the dependencies are injected)
   await di.init();
   setupLogging();
+  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
   runApp(const VoiceNotesApp());
 }
 

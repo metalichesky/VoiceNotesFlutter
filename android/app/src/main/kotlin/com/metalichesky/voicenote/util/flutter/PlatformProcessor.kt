@@ -33,6 +33,8 @@ class PlatformProcessor(
                     SynthesizeVoice("Alan"),
                     SynthesizeVoice("Alexandr"),
                     SynthesizeVoice("Anna"),
+                    SynthesizeVoice("Arina"),
+                    SynthesizeVoice("STL"),
                     SynthesizeVoice("Yuriy"),
                 )
             )

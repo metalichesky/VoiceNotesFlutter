@@ -1,1 +1,2 @@
 -keep class androidx.lifecycle.DefaultLifecycleObserver
+-keep public class it.unimi.dsi.fastutil.objects.Reference2DoubleMap
