@@ -570,15 +570,11 @@ public final class RHVoice {
                 }
             }
             String profileSpec = voiceProfileSpecBuilder.toString();
-            if (BuildConfig.DEBUG) {
-                Log.v(TAG, "Synthesizing the following text: " + request.getCharSequenceText().toString());
-            }
             int rate = request.getSpeechRate();
-            if (BuildConfig.DEBUG) {
-                Log.v(TAG, "rate=" + rate);
-            }
             int pitch = request.getPitch();
             if (BuildConfig.DEBUG) {
+                Log.v(TAG, "Synthesizing the following text: " + request.getCharSequenceText().toString());
+                Log.v(TAG, "rate=" + rate);
                 Log.v(TAG, "pitch=" + pitch);
             }
             if (BuildConfig.DEBUG) {

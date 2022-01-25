@@ -9,6 +9,10 @@ public abstract class Player implements TTSClient {
 
     public abstract void stop();
 
+    public abstract void pause();
+
+    public abstract void play();
+
     public abstract boolean isPlaying();
 
     public abstract void release();

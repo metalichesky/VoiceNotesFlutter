@@ -17,7 +17,9 @@ class ColorUtils {
   static const Color valhalla50 = Color(0x8020154C);
   static const Color portGore = Color(0xFF1F183E);
   static const Color vividViolet = Color(0xFF8B3AAF);
+  static const Color mediumRedViolet = Color(0xFFCE3D91);
   static const Color chardonnay = Color(0xFFFCBD8F);
+  static const Color shamrock = Color(0xFF3DCC8B);
   static const Color kimberly = Color(0xFF8176AC);
   static const Color smoky = Color(0xFF5C547C);
 }

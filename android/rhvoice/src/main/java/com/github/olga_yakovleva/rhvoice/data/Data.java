@@ -1,6 +1,7 @@
 package com.github.olga_yakovleva.rhvoice.data;
 
 import android.content.Context;
+import android.speech.tts.Voice;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -16,6 +17,7 @@ import com.github.olga_yakovleva.rhvoice.voice.VoicePack;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -113,7 +115,15 @@ public final class Data {
         return paths;
     }
 
-    public static List<VoiceInfo> getVoices(Context context) {
+    public static List<VoicePack> getVoices() {
+        List<VoicePack> voices = new LinkedList<VoicePack>();
+        for (LanguagePack language: languages){
+            voices.addAll(language.getVoices());
+        }
+        return voices;
+    }
+
+    public static List<VoiceInfo> getVoicesInfo(Context context) {
         TTSEngine engine = null;
         try {
             engine = new TTSEngine("", Config.getDir(context).getAbsolutePath(), getPaths(context), CoreLogger.instance);
@@ -150,6 +160,27 @@ public final class Data {
                 continue;
             if (lang.getCountryCode().equalsIgnoreCase(cCode)) {
                 res = lang;
+                break;
+            }
+        }
+        return res;
+    }
+
+    public static VoicePack findMatchingVoice(String name) {
+        return findMatchingVoice(name, null, null);
+    }
+
+    public static VoicePack findMatchingVoice(String name, String languageCode, String languageCountryCode) {
+        VoicePack res = null;
+        List<VoicePack> voices = getVoices();
+        for (VoicePack voice : voices) {
+            boolean matchName = name == null || voice.getName().equalsIgnoreCase(name);
+            boolean matchLanguageCode = languageCode == null ||
+                    voice.getLanguage().getCode().equalsIgnoreCase(languageCode);
+            boolean matchLanguageCountryCode = languageCountryCode == null ||
+                    voice.getLanguage().getCountryCode().equalsIgnoreCase(languageCountryCode);
+            if (matchName && matchLanguageCode && matchLanguageCountryCode) {
+                res = voice;
                 break;
             }
         }

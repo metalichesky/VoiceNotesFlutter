@@ -1,9 +1,12 @@
+import 'dart:math';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_quill/flutter_quill.dart' hide Text;
 import 'package:logging/logging.dart';
-import 'package:voice_note/core/util/zefyr.dart';
+import 'package:voice_note/core/util/color.dart';
+import 'package:voice_note/core/util/document.dart';
 import 'package:voice_note/domain/entity/recognize_state.dart';
 import 'package:voice_note/presentation/presenter/record_bloc.dart';
 
@@ -58,13 +61,13 @@ class _RecordPageState extends State<RecordPage> {
         child: Scaffold(
             body: SafeArea(
                 child: Stack(
-          children: [
-            RecognizedEditText(),
-            FooterTools(),
-          ],
-        )
-                //This trailing comma makes auto-formatting nicer for build methods.
-                )));
+              children: [
+                RecognizedEditText(),
+                HeaderTools(),
+                FooterTools(),
+              ],
+            )),
+            resizeToAvoidBottomInset: false));
   }
 
   BlocBuilder _buildCreateRecordButton() {
@@ -86,8 +89,7 @@ class RecognizedEditText extends StatelessWidget {
   final ScrollController scrollController = ScrollController();
   late FocusNode _focusNode;
 
-  RecognizedEditText({Key? key}) : super(key: key) {
-  }
+  RecognizedEditText({Key? key}) : super(key: key) {}
 
   @override
   Widget build(BuildContext context) {
@@ -161,7 +163,7 @@ class RecognizedEditText extends StatelessWidget {
 }
 
 class HeaderTools extends StatelessWidget {
-  HeaderTools({Key? key}) : super(key: key) {}
+  const HeaderTools({Key? key}) : super(key: key);
   static const double height = 60;
   static const double roundRadius = 18;
 
@@ -201,7 +203,7 @@ class HeaderTools extends StatelessWidget {
 }
 
 class FooterTools extends StatelessWidget {
-  FooterTools({Key? key}) : super(key: key) {}
+  const FooterTools({Key? key}) : super(key: key);
   static const double height = 160;
   static const double roundRadius = 18;
 
@@ -222,11 +224,10 @@ class FooterTools extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // _buildRecognizeStateText(),
                   Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
+                      children: const [
                         ClearButton(),
                         Padding(
                             padding: EdgeInsets.symmetric(horizontal: 24),
@@ -235,25 +236,6 @@ class FooterTools extends StatelessWidget {
                       ])
                 ],
               ))),
-    );
-  }
-
-  BlocBuilder _buildRecognizeStateText() {
-    return BlocBuilder<RecordBloc, RecordState>(
-      builder: (context, state) {
-        if (state is RecordState) {
-          Logger.root.info(
-              "RecordPage: _buildRecognizeStateText: recognizeState=${state.recognizeState}");
-          return Container(
-            key: Key("textRecognizeState"),
-            child: Text(
-              "Recognize state: " + getRecognizeStateName(state.recognizeState),
-              style: Theme.of(context).textTheme.headline2,
-            ),
-          );
-        }
-        return Container();
-      },
     );
   }
 
@@ -276,9 +258,9 @@ class FooterTools extends StatelessWidget {
 }
 
 class RecordButton extends StatelessWidget {
-  double size = 85;
+  static const double size = 85;
 
-  RecordButton({Key? key}) : super(key: key);
+  const RecordButton({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -295,10 +277,11 @@ class RecordButton extends StatelessWidget {
               .color
               ?.withOpacity(isButtonEnabled ? 1 : 0.5);
           return Container(
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                shape: BoxShape.circle,
-              ),
+              decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                      colors: [ColorUtils.vividViolet, ColorUtils.chardonnay],
+                      transform: GradientRotation(3 * pi / 2))),
               child: MaterialButton(
                   key: Key("buttonSwitchRecognize"),
                   shape: const CircleBorder(),
@@ -339,13 +322,22 @@ class RecordButton extends StatelessWidget {
 }
 
 class ClearButton extends StatelessWidget {
-  double size = 60;
+  static const double size = 60;
+  static const List<Color> disabledColors = [
+    ColorUtils.vividViolet,
+    ColorUtils.vividViolet
+  ];
+  static const List<Color> enabledColors = [
+    ColorUtils.vividViolet,
+    ColorUtils.mediumRedViolet
+  ];
 
-  ClearButton({Key? key}) : super(key: key);
+  const ClearButton({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
+        key: const Key("buttonClear"),
         width: size,
         height: size,
         // height: double.infinity,
@@ -360,11 +352,11 @@ class ClearButton extends StatelessWidget {
               ?.withOpacity(isButtonEnabled ? 1.0 : 0.5);
           return Container(
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                shape: BoxShape.circle,
-              ),
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                      colors: isButtonEnabled ? enabledColors : disabledColors,
+                      transform: const GradientRotation(3 * pi / 2))),
               child: MaterialButton(
-                  key: Key("buttonSwitchRecognize"),
                   shape: const CircleBorder(),
                   onPressed: (!isButtonEnabled)
                       ? null
@@ -386,9 +378,17 @@ class ClearButton extends StatelessWidget {
 }
 
 class SaveButton extends StatelessWidget {
-  double size = 60;
+  static const double size = 60;
+  static const List<Color> disabledColors = [
+    ColorUtils.vividViolet,
+    ColorUtils.vividViolet
+  ];
+  static const List<Color> enabledColors = [
+    ColorUtils.vividViolet,
+    ColorUtils.shamrock
+  ];
 
-  SaveButton({Key? key}) : super(key: key);
+  const SaveButton({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -407,11 +407,12 @@ class SaveButton extends StatelessWidget {
               ?.withOpacity(isButtonEnabled ? 1.0 : 0.5);
           return Container(
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                shape: BoxShape.circle,
-              ),
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                      colors: isButtonEnabled ? enabledColors : disabledColors,
+                      transform: const GradientRotation(3 * pi / 2))),
               child: MaterialButton(
-                  key: Key("buttonSwitchRecognize"),
+                  key: const Key("buttonSave"),
                   shape: const CircleBorder(),
                   onPressed: (!isButtonEnabled)
                       ? null

@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.content.res.AssetManager;
 import android.content.res.Resources;
 import android.preference.PreferenceManager;
 import android.speech.tts.TextToSpeech;
@@ -150,7 +151,8 @@ public abstract class DataPack {
     public final PackageInfo getPackageInfo(Context context) {
         PackageManager pm = context.getPackageManager();
         try {
-            PackageInfo pi = pm.getPackageInfo(getPackageName(), 0);
+            String packageName = getPackageName();
+            PackageInfo pi = pm.getPackageInfo(packageName, 0);
             if (context.getApplicationInfo().uid != pi.applicationInfo.uid)
                 return null;
             return pi;
@@ -310,6 +312,14 @@ public abstract class DataPack {
         return resources.openRawResource(id);
     }
 
+    private InputStream openAsset(Context context) throws IOException {
+        if (BuildConfig.DEBUG)
+            Log.v(TAG, "Trying to open assets in a package");
+        AssetManager assetManager = context.getAssets();
+        String assetPath = "rhvoice/data/" + getType() + "/" + getName() + ".zip";
+        return assetManager.open(assetPath);
+    }
+
     private void verifyFile(File file) throws IOException {
         if (checksum == null) {
             if (BuildConfig.DEBUG)
@@ -447,6 +457,12 @@ public abstract class DataPack {
             Log.v(TAG, "Opening");
         try {
             return openResource(context);
+        } catch (Exception e) {
+            if (BuildConfig.DEBUG)
+                Log.w(TAG, "Error", e);
+        }
+        try {
+            return openAsset(context);
         } catch (Exception e) {
             if (BuildConfig.DEBUG)
                 Log.w(TAG, "Error", e);

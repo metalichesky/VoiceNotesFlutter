@@ -133,6 +133,20 @@ public class AudioTrackPlayer extends Player {
     }
 
     @Override
+    public void pause() {
+        if (isStarted) {
+            isPlaying = false;
+        }
+    }
+
+    @Override
+    public void play() {
+        if (isStarted) {
+            isPlaying = true;
+        }
+    }
+
+    @Override
     public boolean setSampleRate(int sr) {
         if (sampleRate != 0 && sampleRate == sr) {
             return true;
@@ -182,6 +196,16 @@ public class AudioTrackPlayer extends Player {
             if (!isStarted) {
                 completed = false;
                 break;
+            }
+            if(!isPlaying) {
+                // paused
+                try {
+                    Thread.sleep(30L);
+                } catch (InterruptedException ex) {
+                    completed = false;
+                    break;
+                }
+                continue;
             }
             length = Math.min(totalBytesCount, dataBytes.length) - offset;
             buffer.get(dataBytes, offset, length);

@@ -48,6 +48,20 @@ public class AndroidTTSPlayer extends Player {
     }
 
     @Override
+    public void pause() {
+        if (isStarted) {
+            isPlaying = false;
+        }
+    }
+
+    @Override
+    public void play() {
+        if (isStarted) {
+            isPlaying = true;
+        }
+    }
+
+    @Override
     public boolean playSpeech(short[] samples) {
         if (!isStarted) {
             return false;
@@ -68,6 +82,16 @@ public class AndroidTTSPlayer extends Player {
             if (!isStarted) {
                 completed = false;
                 break;
+            }
+            if(!isPlaying) {
+                // paused
+                try {
+                    Thread.sleep(30L);
+                } catch (InterruptedException ex) {
+                    completed = false;
+                    break;
+                }
+                continue;
             }
             count = Math.min(size, bytes.length - offset);
             if (callback.audioAvailable(bytes, offset, count) != TextToSpeech.SUCCESS) {

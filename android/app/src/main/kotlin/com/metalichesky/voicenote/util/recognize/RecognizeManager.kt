@@ -68,7 +68,7 @@ class RecognizeManager(
             release()
         }
         setState(RecognizeState.PREPARING)
-        StorageService.unpack(context, "model-${params.locale}", PATH_MODEL_DIR,
+        StorageService.unpack(context, "vosk/model-${params.locale}", PATH_MODEL_DIR,
                 { model: Model ->
                     Log.d(LOG_TAG, "initModel: model initialized")
                     this.model = model
