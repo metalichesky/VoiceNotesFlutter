@@ -5,9 +5,9 @@ part 'record_params_model.g.dart';
 
 @JsonSerializable()
 class RecordParamsModel {
-  RecordParamsModel({required this.channelsCount});
+  RecordParamsModel({required this.locale});
 
-  final int channelsCount;
+  final String locale;
 
   factory RecordParamsModel.fromJson(Map<String, dynamic> json) =>
       _$RecordParamsModelFromJson(json);

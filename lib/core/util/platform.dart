@@ -6,5 +6,6 @@ import 'constants.dart';
 class PlatformUtils {
   static const channelSystem = MethodChannel("$APP_ID/system");
   static const channelRecognize = MethodChannel("$APP_ID/recognize");
+  static const channelSynthesize = MethodChannel("$APP_ID/synthesize");
 
 }

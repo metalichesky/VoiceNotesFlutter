@@ -1,6 +1,5 @@
 import 'dart:math';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_quill/flutter_quill.dart' hide Text;
@@ -8,6 +7,7 @@ import 'package:logging/logging.dart';
 import 'package:voice_note/core/util/color.dart';
 import 'package:voice_note/core/util/document.dart';
 import 'package:voice_note/domain/entity/recognize_state.dart';
+import 'package:voice_note/domain/entity/synthesize_state.dart';
 import 'package:voice_note/presentation/presenter/record_bloc.dart';
 
 import '../../dependencies.dart';
@@ -61,20 +61,20 @@ class _RecordPageState extends State<RecordPage> {
         child: Scaffold(
             body: SafeArea(
                 child: Stack(
-              children: [
-                RecognizedEditText(),
-                HeaderTools(),
-                FooterTools(),
-              ],
-            )),
+                  children: const [
+                    RecognizedEditText(),
+                    HeaderTools(),
+                    FooterTools(),
+                  ],
+                )),
             resizeToAvoidBottomInset: false));
   }
 
   BlocBuilder _buildCreateRecordButton() {
     return BlocBuilder<RecordBloc, RecordState>(builder: (context, state) {
-      if (state is RecordState) {}
       return FloatingActionButton(
-        onPressed: () => {
+        onPressed: () =>
+        {
           BlocProvider.of<RecordBloc>(context)
               .add(RecordRequestPermissionsEvent())
         },
@@ -86,10 +86,7 @@ class _RecordPageState extends State<RecordPage> {
 }
 
 class RecognizedEditText extends StatelessWidget {
-  final ScrollController scrollController = ScrollController();
-  late FocusNode _focusNode;
-
-  RecognizedEditText({Key? key}) : super(key: key) {}
+  const RecognizedEditText({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -116,20 +113,20 @@ class RecognizedEditText extends StatelessWidget {
         if (event.item3 == ChangeSource.LOCAL) {
           var currentDocument = controller.document;
           var newText = currentDocument.toPlainTextCorrect();
-          Logger.root.info("RecordPage textChanged text=${newText}");
+          Logger.root.info("RecordPage textChanged text=$newText");
           recordBloc.state.recordRecognized.updateText(newText);
         }
       });
-      _focusNode = FocusNode();
+      var scrollController = ScrollController();
       var editor = QuillEditor(
         controller: controller,
-        focusNode: _focusNode,
+        focusNode: FocusNode(),
         padding: const EdgeInsets.only(
             left: 8,
             right: 8,
-            top: HeaderTools.roundRadius,
-            bottom: FooterTools.roundRadius),
-        autoFocus: true,
+            top: HeaderTools.roundRadius + 10,
+            bottom: FooterTools.roundRadius + 10),
+        autoFocus: false,
         expands: true,
         readOnly: false,
         scrollController: scrollController,
@@ -137,27 +134,28 @@ class RecognizedEditText extends StatelessWidget {
       );
       // _focusNode.requestFocus();
       recordBloc.stream.listen((event) {
-        scrollController.animateTo(
-          scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.linear,
-        );
+        if (scrollController.hasClients && scrollController.position.hasContentDimensions) {
+          scrollController.animateTo(
+            scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.linear,
+          );
+        }
       });
       return Container(
-        child: Padding(
-          padding: const EdgeInsets.only(
-              top: HeaderTools.height - HeaderTools.roundRadius,
-              bottom: FooterTools.height - FooterTools.roundRadius),
-          child: editor,
-          // TextField(
-          //   decoration: const InputDecoration(
-          //     border: OutlineInputBorder(),
-          //     hintText: 'Recognized text...',
-          //   ),
-          //   controller: textController,
-          // ),
-        ),
-      );
+          child: Padding(
+            padding: const EdgeInsets.only(
+                top: HeaderTools.height - HeaderTools.roundRadius,
+                bottom: FooterTools.height - FooterTools.roundRadius),
+            child: editor,
+            // TextField(
+            //   decoration: const InputDecoration(
+            //     border: OutlineInputBorder(),
+            //     hintText: 'Recognized text...',
+            //   ),
+            //   controller: textController,
+            // ),
+          ));
     });
   }
 }
@@ -177,7 +175,9 @@ class HeaderTools extends StatelessWidget {
           // height: double.infinity,
           child: Container(
               decoration: BoxDecoration(
-                  color: Theme.of(context).primaryColor,
+                  color: Theme
+                      .of(context)
+                      .primaryColor,
                   borderRadius: const BorderRadius.only(
                       bottomLeft: Radius.circular(roundRadius),
                       bottomRight: Radius.circular(roundRadius))),
@@ -187,14 +187,18 @@ class HeaderTools extends StatelessWidget {
                       padding: const EdgeInsets.only(left: 10),
                       child: IconButton(
                           alignment: Alignment.centerLeft,
-                          onPressed: () => {
-                                if (Navigator.canPop(context))
-                                  {Navigator.pop(context)}
-                              },
+                          onPressed: () =>
+                          {
+                            if (Navigator.canPop(context))
+                              {Navigator.pop(context)}
+                          },
                           icon: Icon(
                             Icons.arrow_back,
                             size: 34,
-                            color: Theme.of(context).iconTheme.color,
+                            color: Theme
+                                .of(context)
+                                .iconTheme
+                                .color,
                           )))
                 ],
               )),
@@ -217,7 +221,9 @@ class FooterTools extends StatelessWidget {
           // height: double.infinity,
           child: Container(
               decoration: BoxDecoration(
-                  color: Theme.of(context).primaryColor,
+                  color: Theme
+                      .of(context)
+                      .primaryColor,
                   borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(roundRadius),
                       topRight: Radius.circular(roundRadius))),
@@ -225,13 +231,12 @@ class FooterTools extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: const [
                         ClearButton(),
-                        Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 24),
-                            child: RecordButton()),
+                        SynthesizeButton(),
+                        RecognizeButton(),
                         SaveButton()
                       ])
                 ],
@@ -245,7 +250,7 @@ class FooterTools extends StatelessWidget {
         return "Preparing...";
       case RecognizeState.ready:
         return "Ready";
-      case RecognizeState.stared:
+      case RecognizeState.started:
         return "Started";
       case RecognizeState.paused:
         return "Paused";
@@ -257,10 +262,10 @@ class FooterTools extends StatelessWidget {
   }
 }
 
-class RecordButton extends StatelessWidget {
-  static const double size = 85;
+class RecognizeButton extends StatelessWidget {
+  static const double size = 70;
 
-  const RecordButton({Key? key}) : super(key: key);
+  const RecognizeButton({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -272,7 +277,8 @@ class RecordButton extends StatelessWidget {
           bool isButtonEnabled =
               state.recognizeState != RecognizeState.preparing;
           var iconData = _getRecognizeStateIcon(state.recognizeState);
-          var iconColor = Theme.of(context)
+          var iconColor = Theme
+              .of(context)
               .iconTheme
               .color
               ?.withOpacity(isButtonEnabled ? 1 : 0.5);
@@ -283,21 +289,22 @@ class RecordButton extends StatelessWidget {
                       colors: [ColorUtils.vividViolet, ColorUtils.chardonnay],
                       transform: GradientRotation(3 * pi / 2))),
               child: MaterialButton(
-                  key: Key("buttonSwitchRecognize"),
+                  key: const Key("buttonSwitchRecognize"),
                   shape: const CircleBorder(),
                   onPressed: (!isButtonEnabled)
                       ? null
-                      : () => {
-                            BlocProvider.of<RecordBloc>(context).add(
-                              RecordRecognizeSwitchEvent(),
-                            ),
-                          },
+                      : () =>
+                  {
+                    BlocProvider.of<RecordBloc>(context).add(
+                      RecordRecognizeSwitchEvent(),
+                    ),
+                  },
                   child: Align(
                     alignment: Alignment.center,
                     child: Icon(
                       iconData,
                       color: iconColor,
-                      size: 50,
+                      size: size / 2,
                     ),
                   )));
         }));
@@ -306,17 +313,82 @@ class RecordButton extends StatelessWidget {
   IconData _getRecognizeStateIcon(RecognizeState? state) {
     switch (state) {
       case RecognizeState.idle:
-        return Icons.fiber_manual_record;
+        return Icons.settings_voice;
       case RecognizeState.ready:
-        return Icons.fiber_manual_record_outlined;
-      case RecognizeState.stared:
-        return Icons.pause_circle_outline;
+        return Icons.mic;
+      case RecognizeState.started:
+        return Icons.mic_off;
       case RecognizeState.paused:
-        return Icons.fiber_manual_record_outlined;
+        return Icons.mic;
       case RecognizeState.stopped:
-        return Icons.fiber_manual_record_outlined;
+        return Icons.mic;
       default:
-        return Icons.fiber_manual_record;
+        return Icons.mic;
+    }
+  }
+}
+
+class SynthesizeButton extends StatelessWidget {
+  static const double size = 70;
+
+  const SynthesizeButton({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+        width: size,
+        height: size,
+        // height: double.infinity,
+        child: BlocBuilder<RecordBloc, RecordState>(builder: (context, state) {
+          bool isButtonEnabled = state.synthesizeState != SynthesizeState.preparing;
+          var iconData = _getSynthesizeStateIcon(state.synthesizeState);
+          var iconColor = Theme
+              .of(context)
+              .iconTheme
+              .color
+              ?.withOpacity(isButtonEnabled ? 1 : 0.5);
+          return Container(
+              decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                      colors: [ColorUtils.vividViolet, ColorUtils.chardonnay],
+                      transform: GradientRotation(3 * pi / 2))),
+              child: MaterialButton(
+                  key: const Key("buttonSwitchSynthesize"),
+                  shape: const CircleBorder(),
+                  onPressed: (!isButtonEnabled)
+                      ? null
+                      : () =>
+                  {
+                    BlocProvider.of<RecordBloc>(context).add(
+                      RecordSynthesizeSwitchEvent(),
+                    ),
+                  },
+                  child: Align(
+                    alignment: Alignment.center,
+                    child: Icon(
+                      iconData,
+                      color: iconColor,
+                      size: size / 2,
+                    ),
+                  )));
+        }));
+  }
+
+  IconData _getSynthesizeStateIcon(SynthesizeState? state) {
+    switch (state) {
+      case SynthesizeState.idle:
+        return Icons.record_voice_over;
+      case SynthesizeState.ready:
+        return Icons.record_voice_over;
+      case SynthesizeState.started:
+        return Icons.voice_over_off;
+      case SynthesizeState.paused:
+        return Icons.record_voice_over;
+      case SynthesizeState.stopped:
+        return Icons.record_voice_over;
+      default:
+        return Icons.record_voice_over;
     }
   }
 }
@@ -346,7 +418,8 @@ class ClearButton extends StatelessWidget {
               (state.recognizeState == RecognizeState.paused ||
                   state.recognizeState == RecognizeState.ready);
           var iconData = Icons.clear;
-          var iconColor = Theme.of(context)
+          var iconColor = Theme
+              .of(context)
               .iconTheme
               .color
               ?.withOpacity(isButtonEnabled ? 1.0 : 0.5);
@@ -360,17 +433,18 @@ class ClearButton extends StatelessWidget {
                   shape: const CircleBorder(),
                   onPressed: (!isButtonEnabled)
                       ? null
-                      : () => {
-                            BlocProvider.of<RecordBloc>(context).add(
-                              RecordRecognizeClearEvent(),
-                            ),
-                          },
+                      : () =>
+                  {
+                    BlocProvider.of<RecordBloc>(context).add(
+                      RecordClearEvent(),
+                    ),
+                  },
                   child: Align(
                     alignment: Alignment.center,
                     child: Icon(
                       iconData,
                       color: iconColor,
-                      size: 30,
+                      size: size / 2,
                     ),
                   )));
         }));
@@ -401,7 +475,8 @@ class SaveButton extends StatelessWidget {
               (state.recognizeState == RecognizeState.paused ||
                   state.recognizeState == RecognizeState.ready);
           var iconData = Icons.check;
-          var iconColor = Theme.of(context)
+          var iconColor = Theme
+              .of(context)
               .iconTheme
               .color
               ?.withOpacity(isButtonEnabled ? 1.0 : 0.5);
@@ -416,17 +491,18 @@ class SaveButton extends StatelessWidget {
                   shape: const CircleBorder(),
                   onPressed: (!isButtonEnabled)
                       ? null
-                      : () => {
-                            BlocProvider.of<RecordBloc>(context).add(
-                              RecordRecognizeSaveEvent(),
-                            ),
-                          },
+                      : () =>
+                  {
+                    BlocProvider.of<RecordBloc>(context).add(
+                      RecordSaveEvent(),
+                    ),
+                  },
                   child: Align(
                     alignment: Alignment.center,
                     child: Icon(
                       iconData,
                       color: iconColor,
-                      size: 30,
+                      size: size / 2,
                     ),
                   )));
         }));

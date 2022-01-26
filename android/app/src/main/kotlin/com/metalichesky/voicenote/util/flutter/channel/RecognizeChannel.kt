@@ -1,7 +1,6 @@
 package com.metalichesky.voicenote.util.flutter.channel
 
 import com.metalichesky.voicenote.util.flutter.PlatformUtils
-import com.metalichesky.voicenote.util.recognize.RecognizeParams
 import com.metalichesky.voicenote.util.recognize.RecognizeResult
 import com.metalichesky.voicenote.util.recognize.RecognizeState
 import io.flutter.Log
@@ -16,7 +15,7 @@ const val METHOD_STOP_RECOGNIZE = "stopRecognize"
 const val METHOD_GET_RECOGNIZE_STATE = "getRecognizeState"
 
 class RecognizeChannel(
-        val callback: Callback
+    val callback: Callback
 ) : PlatformChannel() {
     companion object {
         const val LOG_TAG = "RecognizeChannel"
@@ -36,15 +35,19 @@ class RecognizeChannel(
         when (call.method) {
             METHOD_CONFIGURE_RECOGNIZE -> {
                 callback.onConfigureRecognize()
+                result.success(null)
             }
             METHOD_START_RECOGNIZE -> {
                 callback.onStartRecognize()
+                result.success(null)
             }
             METHOD_PAUSE_RECOGNIZE -> {
                 callback.onPauseRecognize()
+                result.success(null)
             }
             METHOD_STOP_RECOGNIZE -> {
                 callback.onStopRecognize()
+                result.success(null)
             }
             METHOD_GET_RECOGNIZE_STATE -> {
                 val state = callback.onGetRecognizeState()
@@ -58,11 +61,11 @@ class RecognizeChannel(
 
     fun onRecognizeStateChanged(oldState: RecognizeState, newState: RecognizeState) {
         channel?.invokeMethod(
-                "onRecognizeStateChanged",
-                hashMapOf(
-                        "oldState" to oldState.stateId,
-                        "newState" to newState.stateId
-                )
+            "onRecognizeStateChanged",
+            hashMapOf(
+                "oldState" to oldState.stateId,
+                "newState" to newState.stateId
+            )
         )
     }
 

@@ -1,7 +1,8 @@
 package com.metalichesky.voicenote.util.synthesize
 
 data class SynthesizeParams(
-    val voices: List<SynthesizeVoice>
+    val voices: List<SynthesizeVoice>,
+    val preferredVoices: List<SynthesizeVoice>
 )
 
 data class SynthesizeVoice(

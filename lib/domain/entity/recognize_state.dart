@@ -3,7 +3,7 @@ enum RecognizeState {
   idle,
   preparing,
   ready,
-  stared,
+  started,
   paused,
   stopped
 }
@@ -33,7 +33,7 @@ extension RecognizeStateExtension on RecognizeState {
         return 1;
       case RecognizeState.ready:
         return 2;
-      case RecognizeState.stared:
+      case RecognizeState.started:
         return 3;
       case RecognizeState.paused:
         return 4;

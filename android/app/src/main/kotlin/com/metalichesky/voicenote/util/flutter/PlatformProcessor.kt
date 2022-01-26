@@ -4,11 +4,12 @@ import android.content.Context
 import android.util.Log
 import com.metalichesky.voicenote.util.BatteryUtils
 import com.metalichesky.voicenote.util.flutter.channel.RecognizeChannel
+import com.metalichesky.voicenote.util.flutter.channel.SynthesizeChannel
 import com.metalichesky.voicenote.util.flutter.channel.SystemChannel
 import com.metalichesky.voicenote.util.recognize.*
 import com.metalichesky.voicenote.util.synthesize.*
 import io.flutter.embedding.engine.FlutterEngine
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
 
 class PlatformProcessor(
     val context: Context,
@@ -26,19 +27,8 @@ class PlatformProcessor(
     private val channelRecognizeCallback = object : RecognizeChannel.Callback {
         override fun onConfigureRecognize() {
             Log.d(LOG_TAG, "onConfigureRecognize: thread=${Thread.currentThread().name}")
-            val recognizeParams = RecognizeParams()
-            recognizeManager.setup(recognizeParams)
-            val params = SynthesizeParams(
-                listOf(
-                    SynthesizeVoice("Alan"),
-                    SynthesizeVoice("Alexandr"),
-                    SynthesizeVoice("Anna"),
-                    SynthesizeVoice("Arina"),
-                    SynthesizeVoice("STL"),
-                    SynthesizeVoice("Yuriy"),
-                )
-            )
-            synthesizeManager.setup(params)
+            val params = RecognizeParams()
+            recognizeManager.setup(params)
         }
 
         override fun onStartRecognize() {
@@ -57,37 +47,65 @@ class PlatformProcessor(
             return recognizeManager.state
         }
     }
+    private val channelSynthesizeCallback = object : SynthesizeChannel.Callback {
+        override fun onConfigureSynthesize() {
+            Log.d(LOG_TAG, "onConfigureSynthesize: thread=${Thread.currentThread().name}")
+            val alan = SynthesizeVoice("Alan", "eng", "USA")
+            val stl = SynthesizeVoice("SLT", "eng", "USA")
+            val alexandr = SynthesizeVoice("Aleksandr", "rus", "RUS")
+            val anna = SynthesizeVoice("Anna", "rus", "RUS")
+            val arina = SynthesizeVoice("Arina", "rus", "RUS")
+            val yuriy = SynthesizeVoice("Yuriy", "rus", "RUS")
+            val params = SynthesizeParams(
+                voices = listOf(alan, alexandr, anna, arina, stl, yuriy),
+                preferredVoices = listOf(alexandr, alan)
+            )
+            synthesizeManager.setup(params)
+        }
+
+        override fun onStartSynthesize(text: String?) {
+            synthesizeManager.synthesizeText(text)
+        }
+
+        override fun onResumeSynthesize() {
+            synthesizeManager.resume()
+        }
+
+        override fun onPauseSynthesize() {
+            synthesizeManager.pause()
+        }
+
+        override fun onStopSynthesize() {
+            synthesizeManager.stop()
+        }
+
+        override fun onGetSynthesizeState(): SynthesizeState {
+            return synthesizeManager.state
+        }
+    }
 
     val channelSystem: SystemChannel = SystemChannel(channelSystemCallback)
     val channelRecognize: RecognizeChannel = RecognizeChannel(channelRecognizeCallback)
+    val channelSynthesize: SynthesizeChannel = SynthesizeChannel(channelSynthesizeCallback)
     lateinit var recognizeManager: RecognizeManager
     lateinit var synthesizeManager: SynthesizeManager
 
-    var previousRecognized: RecognizeResult? = null
 
     fun setup(flutterEngine: FlutterEngine) {
         Log.d(LOG_TAG, "setup: thread=${Thread.currentThread().name}")
         recognizeManager = RecognizeManager(context)
         recognizeManager.setRecognizeListener(object : RecognizeListener {
+            var previousRecognized: RecognizeResult? = null
+
             override fun onStateChanged(oldState: RecognizeState, newState: RecognizeState) {
                 Log.d(LOG_TAG, "onStateChanged: oldState=${oldState} newState=${newState}")
                 channelRecognize.onRecognizeStateChanged(oldState, newState)
             }
 
-            var synthesizeJob: Job? = null
             override fun onRecognized(result: RecognizeResult) {
                 if (result != previousRecognized || !result.isEmpty() && previousRecognized?.isEmpty() == true) {
                     channelRecognize.onRecognizeResult(result)
                     previousRecognized = result
-                    if (synthesizeJob == null && result.type == RecognizeResult.Type.TEXT
-                        && !result.isEmpty() && !synthesizeManager.isPlaying()
-                    ) {
-                        synthesizeJob = coroutineScope.launch(Dispatchers.IO) {
-                            delay(1000L)
-                            synthesizeManager.synthesizeText(result.text ?: "")
-                            synthesizeJob = null
-                        }
-                    }
                     Log.d(LOG_TAG, "onRecognized: result=${result}")
                 }
             }
@@ -99,12 +117,13 @@ class PlatformProcessor(
         synthesizeManager = SynthesizeManager(context)
         synthesizeManager.setSynthesizeListener(object : SynthesizeListener {
             override fun onStateChanged(oldState: SynthesizeState, newState: SynthesizeState) {
-
+                channelSynthesize.onSynthesizeStateChanged(oldState, newState)
             }
         })
 
         channelSystem.configure(flutterEngine)
         channelRecognize.configure(flutterEngine)
+        channelSynthesize.configure(flutterEngine)
     }
 
     fun release() {

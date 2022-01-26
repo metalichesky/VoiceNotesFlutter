@@ -3,18 +3,18 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:logging/logging.dart';
 import 'package:voice_note/core/util/platform.dart';
-import 'package:voice_note/domain/entity/recognize_listener.dart';
+import 'package:voice_note/domain/abstractions/recognize_listener.dart';
 import 'package:voice_note/domain/entity/recognize_result.dart';
 import 'package:voice_note/domain/entity/recognize_state.dart';
 
 const String _METHOD_ON_RECOGNIZE_STATE_CHANGED = "onRecognizeStateChanged";
 const String _METHOD_ON_RECOGNIZE_RESULT = "onRecognizeResult";
 
-class RecognizeController {
+class RecognizePlatformController {
   final MethodChannel _channelRecognize = PlatformUtils.channelRecognize;
   RecognizeListener? _recognizeListener;
 
-  RecognizeController() {
+  RecognizePlatformController() {
     _channelRecognize.setMethodCallHandler((call) =>
         _processMethod(call)
     );
@@ -48,7 +48,7 @@ class RecognizeController {
   Future<RecognizeState> getRecognizeState() async {
     int? recognizeStateId;
     try {
-      recognizeStateId = await _channelRecognize.invokeMethod("configureRecognize");
+      recognizeStateId = await _channelRecognize.invokeMethod("getRecognizeState");
     } on PlatformException catch (e) {
       Logger.root.shout("configureRecognize: ${e.message}", e);
     }

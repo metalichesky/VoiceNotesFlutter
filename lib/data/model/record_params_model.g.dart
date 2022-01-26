@@ -8,10 +8,10 @@ part of 'record_params_model.dart';
 
 RecordParamsModel _$RecordParamsModelFromJson(Map<String, dynamic> json) =>
     RecordParamsModel(
-      channelsCount: json['channelsCount'] as int,
+      locale: json['locale'] as String,
     );
 
 Map<String, dynamic> _$RecordParamsModelToJson(RecordParamsModel instance) =>
     <String, dynamic>{
-      'channelsCount': instance.channelsCount,
+      'locale': instance.locale,
     };

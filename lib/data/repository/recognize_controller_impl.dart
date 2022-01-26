@@ -2,20 +2,20 @@
 import 'dart:async';
 
 import 'package:rxdart/rxdart.dart';
-import 'package:voice_note/data/datasource/recognize_controller.dart';
-import 'package:voice_note/domain/abstractions/recognize_repository.dart';
-import 'package:voice_note/domain/entity/recognize_listener.dart';
+import 'package:voice_note/data/datasource/recognize_platform_controller.dart';
+import 'package:voice_note/domain/abstractions/recognize_controller.dart';
+import 'package:voice_note/domain/abstractions/recognize_listener.dart';
 import 'package:voice_note/domain/entity/recognize_result.dart';
 import 'package:voice_note/domain/entity/recognize_state.dart';
 
-class RecognizeRepositoryImpl extends RecognizeRepository implements RecognizeListener {
-  RecognizeController controller;
+class RecognizeControllerImpl extends RecognizeController implements RecognizeListener {
+  RecognizePlatformController controller;
   @override
   StreamController<RecognizeStateUpdate> recognizeStateStream = BehaviorSubject();
   @override
   StreamController<RecognizeResult> recognizeResultStream = BehaviorSubject();
 
-  RecognizeRepositoryImpl({required this.controller}) {
+  RecognizeControllerImpl({required this.controller}) {
     controller.setRecognizeListener(this);
     recognizeStateStream.add(RecognizeStateUpdate(
         oldState: RecognizeState.idle,
