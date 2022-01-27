@@ -33,7 +33,7 @@ class VoiceNotesApp extends StatelessWidget {
       title: 'Voice Notes',
       theme: ThemeUtils.mainTheme,
       onGenerateRoute: RouterUtils.generateRoute,
-      initialRoute: ROUTE_RECORD,
+      initialRoute: ROUTE_MAIN,
     );
   }
 }

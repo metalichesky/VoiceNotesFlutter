@@ -46,11 +46,16 @@ dependencies:
   font_awesome_flutter: ^9.2.0
   # Flutter plugin for finding commonly used locations on the filesystem.
   path_provider: ^2.0.2
+  # Provider widget
   provider: ^6.0.0
   # Access to file system
   path: ^1.8.0
   # Local caching
   shared_preferences: ^2.0.9
+  # Local database (on top of SQLite)
+  drift: ^1.3.0
+  # SQLite for Flutter
+  sqlite3_flutter_libs: ^0.5.0
   # Change text case (from "Just_someSample-text" to "justSomeSampleText", "JUST_SOME_SAMPLE_TEXT" etc.)
   recase: ^4.0.0
   # Tuple
@@ -77,17 +82,18 @@ dependencies:
   json_annotation: ^4.4.0
   # Permissions
   permission_handler: ^8.3.0
-  # Markdown editor
-#  flutter_markdown: ^0.6.9
+  # Rich Text Editor Widget
+  # flutter_markdown: ^0.6.9
   # Zefyrka rich text editor
-#  zefyrka: ^1.1.1
+  # zefyrka: ^1.1.1
   flutter_quill: ^3.4.2
   quill_delta: ^2.0.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  build_runner: ^2.1.5
+  drift_dev: ^1.3.0
+  build_runner: ^2.1.7
   # Json serialization
   json_serializable: ^6.1.1
 

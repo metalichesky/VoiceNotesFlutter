@@ -10,6 +10,7 @@ import 'package:voice_note/domain/entity/record.dart';
 import 'package:voice_note/domain/entity/synthesize_state.dart';
 import 'package:voice_note/domain/usecase/permission_use_case.dart';
 import 'package:voice_note/domain/usecase/recognize_use_case.dart';
+import 'package:voice_note/domain/usecase/records_use_case.dart';
 import 'package:voice_note/domain/usecase/synthesize_use_case.dart';
 import 'package:voice_note/domain/usecase/system_use_case.dart';
 
@@ -22,9 +23,7 @@ class RecordBloc extends Bloc<RecordEvent, RecordState> {
   RecognizeUseCase recognizeUseCase;
   SynthesizeUseCase synthesizeUseCase;
   PermissionUseCase permissionUseCase;
-
-  @override
-  RecordState get initialState => HomeInitialState();
+  RecordsUseCase recordsUseCase;
 
   late StreamController<RecognizeStateUpdate> recognizeStateStream;
   late StreamController<RecognizeResult> recognizeResultStream;
@@ -33,12 +32,14 @@ class RecordBloc extends Bloc<RecordEvent, RecordState> {
   late StreamSubscription recognizeResultStreamSubscription;
   late StreamSubscription synthesizeStateStreamSubscription;
 
-  RecordBloc({
-    required this.systemUseCase,
-    required this.recognizeUseCase,
-    required this.synthesizeUseCase,
-    required this.permissionUseCase,
-  }) : super(HomeInitialState()) {
+  RecordBloc(
+      {required this.systemUseCase,
+      required this.recognizeUseCase,
+      required this.synthesizeUseCase,
+      required this.permissionUseCase,
+      required this.recordsUseCase})
+      : super(RecordInitialState()) {
+    _registerEventMapping();
     recognizeStateStream = recognizeUseCase.recognizeStateStream;
     recognizeResultStream = recognizeUseCase.recognizeResultStream;
     synthesizeStateStream = synthesizeUseCase.synthesizeStateStream;
@@ -58,77 +59,77 @@ class RecordBloc extends Bloc<RecordEvent, RecordState> {
     add(RecordSynthesizeInitializeEvent());
   }
 
-  @override
-  Stream<RecordState> mapEventToState(
-    RecordEvent event,
-  ) async* {
-    switch (event.runtimeType) {
-      case RecordCheckPermissionsEvent:
-        yield* _checkPermissions(event);
-        break;
-      case RecordRequestPermissionsEvent:
-        yield* _requestPermissions(event);
-        break;
-      case RecordRecognizeStateUpdatedEvent:
-        yield* _handleRecognizeStateUpdated(event);
-        break;
-      case RecordRecognizeResultUpdatedEvent:
-        yield* _handleRecognizeResultUpdated(event);
-        break;
-      case RecordSynthesizeStateUpdatedEvent:
-        yield* _handleSynthesizeStateUpdated(event);
-        break;
-      case RecordRecognizeInitializeEvent:
-        _initializeRecognize();
-        break;
-      case RecordRecognizeStartEvent:
-        _startRecognize();
-        break;
-      case RecordRecognizePauseEvent:
-        _pauseRecognize();
-        break;
-      case RecordRecognizeStopEvent:
-        _stopRecognize();
-        break;
-      case RecordRecognizeSwitchEvent:
-        _switchRecognize();
-        break;
-      case RecordSynthesizeInitializeEvent:
-        _initializeSynthesize();
-        break;
-      case RecordSynthesizeStartEvent:
-        String text = state.recordRecognized.allText;
-        _startSynthesize(text);
-        break;
-      case RecordSynthesizePauseEvent:
-        _pauseSynthesize();
-        break;
-      case RecordSynthesizeStopEvent:
-        _stopSynthesize();
-        break;
-      case RecordSynthesizeSwitchEvent:
-        _switchSynthesize();
-        break;
-      case RecordSaveEvent:
-        yield* _saveRecord();
-        break;
-      case RecordClearEvent:
-        yield* _clearRecord();
-        break;
-    }
+  void _registerEventMapping() {
+    on<RecordCheckPermissionsEvent>((event, emit) async {
+      await _checkPermissions(event, emit);
+    });
+    on<RecordRequestPermissionsEvent>((event, emit) async {
+      await _requestPermissions(event, emit);
+    });
+    on<RecordInputUpdatedEvent>((event, emit) async {
+      await _handleInputUpdated(event, emit);
+    });
+    on<RecordRecognizeStateUpdatedEvent>((event, emit) async {
+      await _handleRecognizeStateUpdated(event, emit);
+    });
+    on<RecordRecognizeResultUpdatedEvent>((event, emit) async {
+      await _handleRecognizeResultUpdated(event, emit);
+    });
+    on<RecordSynthesizeStateUpdatedEvent>((event, emit) async {
+      await _handleSynthesizeStateUpdated(event, emit);
+    });
+    on<RecordRecognizeInitializeEvent>((event, emit) async {
+      await _initializeRecognize();
+    });
+    on<RecordRecognizeStartEvent>((event, emit) async {
+      await _startRecognize();
+    });
+    on<RecordRecognizePauseEvent>((event, emit) async {
+      await _pauseRecognize();
+    });
+    on<RecordRecognizeStopEvent>((event, emit) async {
+      await _stopRecognize();
+    });
+    on<RecordRecognizeSwitchEvent>((event, emit) async {
+      await _switchRecognize(event, emit);
+    });
+    on<RecordSynthesizeInitializeEvent>((event, emit) async {
+      await _initializeSynthesize();
+    });
+    on<RecordSynthesizeStartEvent>((event, emit) async {
+      await _startSynthesize();
+    });
+    on<RecordSynthesizePauseEvent>((event, emit) async {
+      await _pauseSynthesize();
+    });
+    on<RecordSynthesizeStopEvent>((event, emit) async {
+      await _stopSynthesize();
+    });
+    on<RecordSynthesizeSwitchEvent>((event, emit) async {
+      await _switchSynthesize();
+    });
+    on<RecordSaveEvent>((event, emit) async {
+      await _saveRecord(event, emit);
+    });
+    on<RecordClearEvent>((event, emit) async {
+      await _clearRecord(event, emit);
+    });
+    on<RecordCloseEvent>((event, emit) async {
+      await _closeRecord(event, emit);
+    });
   }
 
-  Stream<RecordState> _checkPermissions(RecordEvent event) async* {
-    RecordState newState = HomeInitialState();
+  Future<void> _checkPermissions(
+      RecordEvent event, Emitter<RecordState> emit) async {
+    RecordState newState = RecordInitialState();
     newState.from(state);
     bool audioGranted = await permissionUseCase.isAudioRecordAvailable();
-    bool storageGranted =
-    await permissionUseCase.isExternalStorageAvailable();
+    bool storageGranted = await permissionUseCase.isExternalStorageAvailable();
     newState.audioPermissionsGranted = audioGranted;
     newState.storagePermissionsGranted = storageGranted;
     Logger.root.info(
         "RecordBloc: mapEventToState: HomeCheckPermissionsEvent storageGranted=${storageGranted} audioGranted=${audioGranted}");
-    yield newState;
+    emit(newState);
     if (!audioGranted || !storageGranted) {
       add(RecordRequestPermissionsEvent());
     } else {
@@ -136,42 +137,63 @@ class RecordBloc extends Bloc<RecordEvent, RecordState> {
     }
   }
 
-  Stream<RecordState> _requestPermissions(RecordEvent event) async* {
-    RecordState newState = HomeInitialState();
+  Future<void> _requestPermissions(
+      RecordEvent event, Emitter<RecordState> emit) async {
+    RecordState newState = RecordInitialState();
     newState.from(state);
     if (!state.audioPermissionsGranted) {
       newState.audioPermissionsGranted =
-      await permissionUseCase.requestAudioRecord();
+          await permissionUseCase.requestAudioRecord();
     }
     if (!state.storagePermissionsGranted) {
       newState.storagePermissionsGranted =
-      await permissionUseCase.requestExternalStorage();
+          await permissionUseCase.requestExternalStorage();
     }
     if (newState.storagePermissionsGranted &&
         newState.audioPermissionsGranted) {
       add(RecordRecognizeInitializeEvent());
     }
-    yield newState;
+    emit(newState);
   }
 
-  Stream<RecordState> _handleRecognizeStateUpdated(RecordEvent event) async* {
-    RecordRecognizeStateUpdatedEvent updatedEvent = event as RecordRecognizeStateUpdatedEvent;
-    HomeRecognizeStateUpdatedState newState = HomeRecognizeStateUpdatedState();
-    newState.from(state);
-    newState.setRecognizeUpdate(updatedEvent.stateUpdate);
-    yield newState;
-  }
-
-  Stream<RecordState> _handleRecognizeResultUpdated(RecordEvent event) async* {
-    RecordRecognizeResultUpdatedEvent updatedEvent = event as RecordRecognizeResultUpdatedEvent;
-    HomeRecognizeResultUpdatedState newState = HomeRecognizeResultUpdatedState();
-    newState.from(state);
-    if (newState.addResult(updatedEvent.recognizeResult)) {
-      yield newState;
+  Future<void> _handleInputUpdated(
+      RecordEvent event, Emitter<RecordState> emit) async {
+    if (event is RecordInputUpdatedEvent) {
+      var newState = RecordInputUpdatedState();
+      newState.from(state);
+      recordsUseCase.changeEditedRecordText(event.text);
+      newState.editedRecord = recordsUseCase.editedRecord;
+      emit(newState);
     }
   }
 
-  void _switchRecognize() {
+  Future<void> _handleRecognizeStateUpdated(
+      RecordEvent event, Emitter<RecordState> emit) async {
+    RecordRecognizeStateUpdatedEvent updatedEvent =
+        event as RecordRecognizeStateUpdatedEvent;
+    RecordRecognizeStateUpdatedState newState =
+        RecordRecognizeStateUpdatedState();
+    newState.from(state);
+    newState.setRecognizeUpdate(updatedEvent.stateUpdate);
+    emit(newState);
+  }
+
+  Future<void> _handleRecognizeResultUpdated(
+      RecordEvent event, Emitter<RecordState> emit) async {
+    if (event is RecordRecognizeResultUpdatedEvent) {
+      if (recordsUseCase
+          .addEditedRecordRecognizeResult(event.recognizeResult)) {
+        RecordRecognizeResultUpdatedState newState =
+            RecordRecognizeResultUpdatedState();
+        newState.from(state);
+        newState.editedRecord = recordsUseCase.editedRecord;
+        emit(newState);
+      }
+    }
+  }
+
+  Future<void> _switchRecognize(
+      RecordEvent event, Emitter<RecordState> emit) async {
     RecognizeState? currentRecognizeState = state.recognizeState;
     switch (currentRecognizeState) {
       case RecognizeState.idle:
@@ -198,7 +220,7 @@ class RecordBloc extends Bloc<RecordEvent, RecordState> {
     }
   }
 
-  void _initializeRecognize() {
+  Future<void> _initializeRecognize() async {
     if (state.isAllPermissionsGranted()) {
       recognizeUseCase.configureRecognize();
     } else {
@@ -206,7 +228,7 @@ class RecordBloc extends Bloc<RecordEvent, RecordState> {
     }
   }
 
-  void _startRecognize() {
+  Future<void> _startRecognize() async {
     if (state.recognizeState == RecognizeState.ready ||
         state.recognizeState == RecognizeState.paused ||
         state.recognizeState == RecognizeState.stopped) {
@@ -218,19 +240,19 @@ class RecordBloc extends Bloc<RecordEvent, RecordState> {
     }
   }
 
-  void _pauseRecognize() {
+  Future<void> _pauseRecognize() async {
     if (state.recognizeState == RecognizeState.started) {
       recognizeUseCase.pauseRecognize();
     }
   }
 
-  void _stopRecognize() {
+  Future<void> _stopRecognize() async {
     if (state.recognizeState == RecognizeState.started) {
       recognizeUseCase.stopRecognize();
     }
   }
 
-  void _switchSynthesize() {
+  Future<void> _switchSynthesize() async {
     SynthesizeState? currentSynthesizeState = state.synthesizeState;
     switch (currentSynthesizeState) {
       case SynthesizeState.idle:
@@ -240,8 +262,7 @@ class RecordBloc extends Bloc<RecordEvent, RecordState> {
         // just wait...
         break;
       case SynthesizeState.ready:
-        String text = state.recordRecognized.allText;
-        _startSynthesize(text);
+        _startSynthesize();
         break;
       case SynthesizeState.started:
         _stopSynthesize();
@@ -250,8 +271,7 @@ class RecordBloc extends Bloc<RecordEvent, RecordState> {
         _resumeSynthesize();
         break;
       case SynthesizeState.stopped:
-        String text = state.recordRecognized.allText;
-        _startSynthesize(text);
+        _startSynthesize();
         break;
       default:
         // skip
@@ -259,19 +279,23 @@ class RecordBloc extends Bloc<RecordEvent, RecordState> {
     }
   }
 
-  Stream<RecordState> _handleSynthesizeStateUpdated(RecordEvent event) async* {
-    RecordSynthesizeStateUpdatedEvent updatedEvent = event as RecordSynthesizeStateUpdatedEvent;
-    HomeRecognizeStateUpdatedState newState = HomeRecognizeStateUpdatedState();
+  Future<void> _handleSynthesizeStateUpdated(
+      RecordEvent event, Emitter<RecordState> emit) async {
+    RecordSynthesizeStateUpdatedEvent updatedEvent =
+        event as RecordSynthesizeStateUpdatedEvent;
+    RecordSynthesizeStateUpdatedState newState =
+        RecordSynthesizeStateUpdatedState();
     newState.from(state);
     newState.setSynthesizeUpdate(updatedEvent.stateUpdate);
-    yield newState;
+    emit(newState);
   }
 
-  void _initializeSynthesize() {
+  Future<void> _initializeSynthesize() async {
     synthesizeUseCase.configureSynthesize();
   }
 
-  void _startSynthesize(String text) {
+  Future<void> _startSynthesize() async {
+    String text = recordsUseCase.editedRecord?.allText ?? "";
     if (state.synthesizeState == SynthesizeState.ready ||
         state.synthesizeState == SynthesizeState.paused ||
         state.synthesizeState == SynthesizeState.stopped) {
@@ -279,38 +303,57 @@ class RecordBloc extends Bloc<RecordEvent, RecordState> {
     }
   }
 
-  void _resumeSynthesize() {
+  Future<void> _resumeSynthesize() async {
     if (state.synthesizeState == SynthesizeState.paused) {
       synthesizeUseCase.resumeSynthesize();
     }
   }
 
-  void _pauseSynthesize() {
+  Future<void> _pauseSynthesize() async {
     if (state.synthesizeState == SynthesizeState.started) {
       synthesizeUseCase.pauseSynthesize();
     }
   }
 
-  void _stopSynthesize() {
+  Future<void> _stopSynthesize() async {
     if (state.synthesizeState == SynthesizeState.started) {
       synthesizeUseCase.stopSynthesize();
     }
   }
 
-  Stream<RecordState> _clearRecord() async* {
-    state.recordRecognized.clear();
-    HomeRecognizeResultUpdatedState newState = HomeRecognizeResultUpdatedState();
+  Future<void> _clearRecord(
+      RecordEvent event, Emitter<RecordState> emit) async {
+    recordsUseCase.clearEditedRecordText();
+    RecordRecognizeResultUpdatedState newState =
+        RecordRecognizeResultUpdatedState();
     newState.from(state);
-    yield newState;
+    newState.editedRecord = recordsUseCase.editedRecord;
+    emit(newState);
   }
 
-  Stream<RecordState> _saveRecord() async* {
-    // TODO: save record
+  Future<void> _saveRecord(RecordEvent event, Emitter<RecordState> emit) async {
+    recordsUseCase.saveEditedRecord();
+    recordsUseCase.editedRecord = null;
+    var newState = RecordSavedState();
+    newState.from(state);
+    newState.editedRecord = null;
+    emit(newState);
+  }
+
+  Future<void> _closeRecord(
+      RecordEvent event, Emitter<RecordState> emit) async {
+    recordsUseCase.editedRecord = null;
+    RecordClosedState newState = RecordClosedState();
+    newState.from(state);
+    newState.editedRecord = null;
+    emit(newState);
   }
 
   @override
   Future<void> close() {
     recognizeStateStreamSubscription.cancel();
+    recognizeResultStreamSubscription.cancel();
+    synthesizeStateStreamSubscription.cancel();
     return super.close();
   }
 }

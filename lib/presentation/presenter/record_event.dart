@@ -19,6 +19,12 @@ class RecordRecognizeResultUpdatedEvent extends RecordEvent {
   RecordRecognizeResultUpdatedEvent({required this.recognizeResult});
 }
 
+class RecordInputUpdatedEvent extends RecordEvent {
+  String text;
+
+  RecordInputUpdatedEvent({required this.text});
+}
+
 class RecordSynthesizeStateUpdatedEvent extends RecordEvent {
   SynthesizeStateUpdate stateUpdate;
 
@@ -36,6 +42,8 @@ class RecordRecognizePauseEvent extends RecordEvent {}
 class RecordRecognizeStopEvent extends RecordEvent {}
 
 class RecordClearEvent extends RecordEvent {}
+
+class RecordCloseEvent extends RecordEvent {}
 
 class RecordSaveEvent extends RecordEvent {}
 

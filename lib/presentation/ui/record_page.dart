@@ -6,6 +6,7 @@ import 'package:flutter_quill/flutter_quill.dart' hide Text;
 import 'package:logging/logging.dart';
 import 'package:voice_note/core/util/color.dart';
 import 'package:voice_note/core/util/document.dart';
+import 'package:voice_note/core/util/router.dart';
 import 'package:voice_note/domain/entity/recognize_state.dart';
 import 'package:voice_note/domain/entity/synthesize_state.dart';
 import 'package:voice_note/presentation/presenter/record_bloc.dart';
@@ -14,21 +15,6 @@ import '../../dependencies.dart';
 
 class RecordPage extends StatefulWidget {
   const RecordPage({Key? key}) : super(key: key);
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  // Invoke "debug painting" (press "p" in the console, choose the
-  // "Toggle Debug Paint" action from the Flutter Inspector in Android
-  // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-  // to see the wireframe for each widget.
-
   final String title = "Record Page";
 
   @override
@@ -36,8 +22,6 @@ class RecordPage extends StatefulWidget {
 }
 
 class _RecordPageState extends State<RecordPage> {
-  String recognizeState = "";
-
   @override
   void initState() {
     Logger.root.info("RecordPage: initState");
@@ -46,16 +30,6 @@ class _RecordPageState extends State<RecordPage> {
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
-    return _buildPage(context);
-  }
-
-  BlocProvider<RecordBloc> _buildPage(BuildContext context) {
     return BlocProvider<RecordBloc>(
         create: (_) => getIt<RecordBloc>(),
         child: Scaffold(
@@ -69,20 +43,6 @@ class _RecordPageState extends State<RecordPage> {
                 )),
             resizeToAvoidBottomInset: false));
   }
-
-  BlocBuilder _buildCreateRecordButton() {
-    return BlocBuilder<RecordBloc, RecordState>(builder: (context, state) {
-      return FloatingActionButton(
-        onPressed: () =>
-        {
-          BlocProvider.of<RecordBloc>(context)
-              .add(RecordRequestPermissionsEvent())
-        },
-        tooltip: 'Record new',
-        child: const Icon(Icons.add),
-      );
-    });
-  }
 }
 
 class RecognizedEditText extends StatelessWidget {
@@ -90,14 +50,18 @@ class RecognizedEditText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<RecordBloc, RecordState>(builder: (context, state) {
+    return BlocBuilder<RecordBloc, RecordState>(
+        buildWhen: (oldState, newState) {
+          // ignore user text changes
+          return newState is! RecordInputUpdatedState;
+        }, builder: (context, state) {
       RecordBloc recordBloc = BlocProvider.of<RecordBloc>(context);
       Document newDocument = Document();
-      String allText = state.recordRecognized.allText;
+      String allText = state.editedRecord?.allText ?? "";
       Logger.root.info("RecognizedEditText: text=$allText");
       if (allText.isNotEmpty) {
         newDocument.insert(0, allText);
-        String lastRecognizeText = state.recordRecognized.lastRecognizedText;
+        String lastRecognizeText = state.editedRecord?.lastRecognizedText ?? "";
         if (lastRecognizeText.isNotEmpty) {
           newDocument.format(allText.length - lastRecognizeText.length,
               lastRecognizeText.length, Attribute.bold);
@@ -114,7 +78,7 @@ class RecognizedEditText extends StatelessWidget {
           var currentDocument = controller.document;
           var newText = currentDocument.toPlainTextCorrect();
           Logger.root.info("RecordPage textChanged text=$newText");
-          recordBloc.state.recordRecognized.updateText(newText);
+          recordBloc.add(RecordInputUpdatedEvent(text: newText));
         }
       });
       var scrollController = ScrollController();
@@ -134,7 +98,8 @@ class RecognizedEditText extends StatelessWidget {
       );
       // _focusNode.requestFocus();
       recordBloc.stream.listen((event) {
-        if (scrollController.hasClients && scrollController.position.hasContentDimensions) {
+        if (scrollController.hasClients &&
+            scrollController.position.hasContentDimensions) {
           scrollController.animateTo(
             scrollController.position.maxScrollExtent,
             duration: const Duration(milliseconds: 300),
@@ -187,10 +152,9 @@ class HeaderTools extends StatelessWidget {
                       padding: const EdgeInsets.only(left: 10),
                       child: IconButton(
                           alignment: Alignment.centerLeft,
-                          onPressed: () =>
-                          {
-                            if (Navigator.canPop(context))
-                              {Navigator.pop(context)}
+                          onPressed: () {
+                            BlocProvider.of<RecordBloc>(context).add(
+                                RecordCloseEvent());
                           },
                           icon: Icon(
                             Icons.arrow_back,
@@ -202,7 +166,8 @@ class HeaderTools extends StatelessWidget {
                           )))
                 ],
               )),
-        ));
+        )
+    );
   }
 }
 
@@ -340,7 +305,8 @@ class SynthesizeButton extends StatelessWidget {
         height: size,
         // height: double.infinity,
         child: BlocBuilder<RecordBloc, RecordState>(builder: (context, state) {
-          bool isButtonEnabled = state.synthesizeState != SynthesizeState.preparing;
+          bool isButtonEnabled =
+              state.synthesizeState != SynthesizeState.preparing;
           var iconData = _getSynthesizeStateIcon(state.synthesizeState);
           var iconColor = Theme
               .of(context)
@@ -414,7 +380,7 @@ class ClearButton extends StatelessWidget {
         height: size,
         // height: double.infinity,
         child: BlocBuilder<RecordBloc, RecordState>(builder: (context, state) {
-          bool isButtonEnabled = !state.recordRecognized.isEmpty() &&
+          bool isButtonEnabled = state.editedRecord?.isEmpty() != true &&
               (state.recognizeState == RecognizeState.paused ||
                   state.recognizeState == RecognizeState.ready);
           var iconData = Icons.clear;
@@ -471,7 +437,13 @@ class SaveButton extends StatelessWidget {
         height: size,
         // height: double.infinity,
         child: BlocBuilder<RecordBloc, RecordState>(builder: (context, state) {
-          bool isButtonEnabled = !state.recordRecognized.isEmpty() &&
+          if (state is RecordSavedState) {
+            BlocProvider.of<RecordBloc>(context).add(RecordCloseEvent());
+          }
+          if (state is RecordClosedState) {
+            Navigator.pushNamed(context, ROUTE_MAIN);
+          }
+          bool isButtonEnabled = state.editedRecord?.isEmpty() != true &&
               (state.recognizeState == RecognizeState.paused ||
                   state.recognizeState == RecognizeState.ready);
           var iconData = Icons.check;

@@ -1,12 +1,65 @@
-import 'dart:collection';
 import 'dart:core';
 
 import 'package:voice_note/domain/entity/recognize_result.dart';
 
-abstract class Record {}
+abstract class Record {
+  int id = 0;
+  String title = "";
+  String text = "";
+  String createDate = "";
+  String lastChangeDate = "";
 
-class RecordRecognized extends Record {
+  Record();
+
+  Record.create(
+      {required this.id,
+      required this.title,
+      required this.text,
+      required this.createDate,
+      required this.lastChangeDate});
+
+  Record.empty();
+
+  DateTime? get createDateTime {
+    return DateTime.tryParse(createDate);
+  }
+
+  DateTime? get lastChangeDateTime {
+    return DateTime.tryParse(lastChangeDate);
+  }
+
+  void setText(String text) {
+    this.text = text;
+  }
+
+  void setTitle(String title) {
+    this.title = title;
+  }
+}
+
+class TextRecord extends Record {
+  TextRecord.create(
+      {required int id,
+      required String title,
+      required String text,
+      required String createDate,
+      required String lastChangeDate})
+      : super.create(
+            id: id,
+            title: title,
+            text: text,
+            createDate: createDate,
+            lastChangeDate: lastChangeDate);
+}
+
+class EditableTextRecord extends Record {
   RecognizeResult? lastRecognizeResult = null;
+
+  EditableTextRecord();
+
+  EditableTextRecord.fromTextRecord(TextRecord record) {
+    from(record);
+  }
 
   String get lastRecognizedText {
     String? lastRecognizedText = lastRecognizeResult?.anyResult;
@@ -17,8 +70,6 @@ class RecordRecognized extends Record {
     }
   }
 
-  String text = "";
-
   String get allText {
     StringBuffer stringBuffer = StringBuffer();
     stringBuffer.write(text);
@@ -26,7 +77,7 @@ class RecordRecognized extends Record {
       if (stringBuffer.isNotEmpty) {
         stringBuffer.write(" ");
       }
-      stringBuffer.write(lastRecognizeResult?.anyResult ?? "");
+      stringBuffer.write(lastRecognizedText);
     }
     return stringBuffer.toString();
   }
@@ -35,8 +86,8 @@ class RecordRecognized extends Record {
     return allText.isEmpty;
   }
 
-  void updateText(String text) {
-    this.text = text;
+  void removeResult() {
+    lastRecognizeResult = null;
   }
 
   bool addResult(RecognizeResult recognizeResult) {
@@ -49,7 +100,7 @@ class RecordRecognized extends Record {
           textBuffer.write(" ");
         }
         textBuffer.write(recognizeResult.text ?? "");
-        text = textBuffer.toString();
+        setText(textBuffer.toString());
         lastRecognizeResult = null;
       } else {
         lastRecognizeResult = recognizeResult;
@@ -60,8 +111,26 @@ class RecordRecognized extends Record {
     }
   }
 
+  TextRecord complete() {
+    return TextRecord.create(
+        id: id,
+        title: title,
+        text: text,
+        createDate: createDate,
+        lastChangeDate: lastChangeDate
+    );
+  }
+
+  void from(TextRecord record) {
+    id = record.id;
+    title = record.title;
+    text = record.text;
+    createDate = record.createDate;
+    lastChangeDate = record.lastChangeDate;
+  }
+
   void clear() {
     lastRecognizeResult = null;
-    text = "";
+    setText("");
   }
 }

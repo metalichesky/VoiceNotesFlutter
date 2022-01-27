@@ -137,14 +137,15 @@ class SynthesizeManager(
     }
 
     private fun getLanguageCodes(text: String): List<String> {
-        return languageDetector?.computeLanguageConfidenceValues(text)
-            ?.map { it.key.isoCode639_3.toString().lowercase() }
+        return languageDetector?.computeLanguageConfidenceValues(text)?.map { it.key.isoCode639_3.toString().lowercase() }
             ?: synthesizeLanguages.map { it.code }
             ?: listOf(DEFAULT_LANGUAGE_CODE)
     }
 
     fun synthesizeText(text: String?) {
-        text ?: return
+        if (text == null || text.isEmpty()) {
+            return
+        }
         jobManager.post(Job(JOB_SYNTHESIZE_TEXT){
             synthesizeTextInternal(text)
         })
